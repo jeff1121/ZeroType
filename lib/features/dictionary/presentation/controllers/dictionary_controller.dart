@@ -5,7 +5,8 @@ import 'package:zero_type/features/dictionary/domain/repositories/dictionary_rep
 part 'dictionary_controller.g.dart';
 
 @riverpod
-DictionaryRepository dictionaryRepository(Ref ref) => DictionaryRepositoryImpl();
+DictionaryRepository dictionaryRepository(Ref ref) =>
+    DictionaryRepositoryImpl();
 
 @riverpod
 class DictionaryController extends _$DictionaryController {

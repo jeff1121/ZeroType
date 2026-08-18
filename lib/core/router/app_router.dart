@@ -13,17 +13,17 @@ part 'app_router.gr.dart';
 class AppRouter extends RootStackRouter {
   @override
   List<AutoRoute> get routes => [
-        AutoRoute(
-          page: MainShellRoute.page,
-          initial: true,
-          children: [
-            AutoRoute(page: ModelConfigRoute.page),   // index 0
-            AutoRoute(page: PromptRoute.page),         // index 1
-            AutoRoute(page: DictionaryRoute.page),     // index 2
-            AutoRoute(page: HistoryRoute.page),        // index 3
-            AutoRoute(page: SettingsRoute.page),       // index 4
-            AutoRoute(page: TestingRoute.page),
-          ],
-        ),
-      ];
+    AutoRoute(
+      page: MainShellRoute.page,
+      initial: true,
+      children: [
+        AutoRoute(page: ModelConfigRoute.page), // index 0
+        AutoRoute(page: PromptRoute.page), // index 1
+        AutoRoute(page: DictionaryRoute.page), // index 2
+        AutoRoute(page: HistoryRoute.page), // index 3
+        AutoRoute(page: SettingsRoute.page), // index 4
+        AutoRoute(page: TestingRoute.page),
+      ],
+    ),
+  ];
 }

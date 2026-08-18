@@ -19,7 +19,9 @@ class PromptRepositoryImpl implements PromptRepository {
   @override
   Future<String> getDefaultSpeechPrompt() async {
     try {
-      final content = await rootBundle.loadString('prompts/SpeechToText.prompt');
+      final content = await rootBundle.loadString(
+        'prompts/SpeechToText.prompt',
+      );
       return content.trim();
     } catch (e) {
       print('[PromptRepo] ERROR loading SpeechToText.prompt from assets: $e');

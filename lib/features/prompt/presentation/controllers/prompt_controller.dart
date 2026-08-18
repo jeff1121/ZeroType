@@ -32,4 +32,3 @@ class SpeechPromptController extends _$SpeechPromptController {
     return newVal;
   }
 }
-

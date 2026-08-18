@@ -10,7 +10,7 @@ class HotkeyService {
 
   final SharedPreferences _prefs;
   static const String _hotkeyKey = 'global_hotkey';
-  
+
   late HotKey _currentHotkey;
   HotkeyCallback? _onActivated;
   bool _isPaused = false;
@@ -36,7 +36,7 @@ class HotkeyService {
         print('[HotkeyService] Error loading hotkey: $e');
       }
     }
-    
+
     // Default: Alt + Space
     _currentHotkey = HotKey(
       key: PhysicalKeyboardKey.space,
@@ -63,7 +63,7 @@ class HotkeyService {
     await hotKeyManager.unregisterAll();
     _currentHotkey = newKey;
     await _saveHotkey(newKey);
-    
+
     // Only register if we're not currently paused
     if (!_isPaused) {
       await _registerCurrent();

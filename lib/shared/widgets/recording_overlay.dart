@@ -78,24 +78,24 @@ class _OverlayPill extends StatelessWidget {
   final VoidCallback onCancel;
 
   Color get _dotColor => switch (state.status) {
-        ZeroTypeStatus.recording => const Color(0xFF6C63FF),
-        ZeroTypeStatus.cancelling => Colors.grey,
-        ZeroTypeStatus.saving => const Color(0xFFFFAA00),
-        ZeroTypeStatus.transcribing => const Color(0xFF63B3FF),
-        ZeroTypeStatus.done => Colors.greenAccent,
-        ZeroTypeStatus.error => Colors.redAccent,
-        ZeroTypeStatus.idle => Colors.grey,
-      };
+    ZeroTypeStatus.recording => const Color(0xFF6C63FF),
+    ZeroTypeStatus.cancelling => Colors.grey,
+    ZeroTypeStatus.saving => const Color(0xFFFFAA00),
+    ZeroTypeStatus.transcribing => const Color(0xFF63B3FF),
+    ZeroTypeStatus.done => Colors.greenAccent,
+    ZeroTypeStatus.error => Colors.redAccent,
+    ZeroTypeStatus.idle => Colors.grey,
+  };
 
   String get _label => switch (state.status) {
-        ZeroTypeStatus.recording => '錄音中',
-        ZeroTypeStatus.cancelling => '取消中',
-        ZeroTypeStatus.saving => '擷取中',
-        ZeroTypeStatus.transcribing => '辨識中',
-        ZeroTypeStatus.done => '已完成',
-        ZeroTypeStatus.error => '錯誤',
-        ZeroTypeStatus.idle => '',
-      };
+    ZeroTypeStatus.recording => '錄音中',
+    ZeroTypeStatus.cancelling => '取消中',
+    ZeroTypeStatus.saving => '擷取中',
+    ZeroTypeStatus.transcribing => '辨識中',
+    ZeroTypeStatus.done => '已完成',
+    ZeroTypeStatus.error => '錯誤',
+    ZeroTypeStatus.idle => '',
+  };
 
   bool get _showWaveform =>
       state.status == ZeroTypeStatus.recording ||
@@ -180,9 +180,10 @@ class _PulsingDotState extends State<_PulsingDot>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
     if (widget.active) _ctrl.repeat(reverse: true);
   }
 
@@ -210,10 +211,7 @@ class _PulsingDotState extends State<_PulsingDot>
       child: Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }
@@ -290,7 +288,8 @@ class _WaveformBars extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: List.generate(_barCount, (i) {
-        final h = _minHeight +
+        final h =
+            _minHeight +
             (_maxHeight - _minHeight) *
                 (amplitude * _factors[i]).clamp(0.0, 1.0);
         return Padding(

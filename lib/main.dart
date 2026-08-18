@@ -63,7 +63,7 @@ class ZeroTypeApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeControllerProvider);
     final appRouter = ref.watch(appRouterProvider);
-    
+
     return MaterialApp.router(
       title: 'ZeroType',
       theme: AppTheme.lightTheme,
@@ -107,14 +107,12 @@ class _AppInitializerState extends ConsumerState<_AppInitializer>
     await _hotkeyService.initialize();
     _hotkeyService.setCallback(_onHotkeyActivated);
 
-    await _trayService.initialize(
-      onShowWindow: _showWindow,
-      onQuit: _quit,
-    );
+    await _trayService.initialize(onShowWindow: _showWindow, onQuit: _quit);
 
     // Auto-purge expired history records on startup
     final prefs = getIt<SharedPreferences>();
-    final retentionDays = prefs.getInt(AppConstants.historyRetentionDaysKey) ?? 7;
+    final retentionDays =
+        prefs.getInt(AppConstants.historyRetentionDaysKey) ?? 7;
     await getIt<HistoryRepository>().purgeExpiredRecords(retentionDays);
   }
 

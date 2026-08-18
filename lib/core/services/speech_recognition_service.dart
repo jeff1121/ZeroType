@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 
 typedef TranscriptionResult = ({
   String text,
@@ -16,30 +17,49 @@ class SpeechRecognitionService {
 
   Future<TranscriptionResult> transcribe({
     required String audioFilePath,
-    required String apiKey,
     required String provider,
     required String model,
     required String prompt,
-    String? customEndpoint,
+    required SpeechChannel channel,
+    String? apiKey,
+    String? accessToken,
+    String? antigravityProjectId,
+    bool isAntigravity = false,
+    String? proxyRoot,
   }) async {
-    print('[SpeechRecognition] Transcribing with $provider ($model)...');
+    print(
+      '[SpeechRecognition] Transcribing with $provider ($model) via ${channel.id}${isAntigravity ? " (Antigravity Direct)" : ""}',
+    );
 
     switch (provider) {
       case 'openai':
         return _transcribeWithOpenAI(
           audioFilePath: audioFilePath,
           apiKey: apiKey,
+          accessToken: accessToken,
           model: model,
           prompt: prompt,
-          customEndpoint: customEndpoint,
+          channel: channel,
+          proxyRoot: proxyRoot,
         );
       case 'gemini':
+        if (isAntigravity && channel == SpeechChannel.official) {
+          return _transcribeWithAntigravityDirect(
+            audioFilePath: audioFilePath,
+            accessToken: accessToken,
+            projectId: antigravityProjectId,
+            model: model,
+            prompt: prompt,
+          );
+        }
         return _transcribeWithGemini(
           audioFilePath: audioFilePath,
           apiKey: apiKey,
+          accessToken: accessToken,
           model: model,
           prompt: prompt,
-          customEndpoint: customEndpoint,
+          channel: channel,
+          proxyRoot: proxyRoot,
         );
       default:
         throw Exception('不支援的語音辨識服務商：$provider');
@@ -48,10 +68,12 @@ class SpeechRecognitionService {
 
   Future<TranscriptionResult> _transcribeWithOpenAI({
     required String audioFilePath,
-    required String apiKey,
     required String model,
     required String prompt,
-    String? customEndpoint,
+    required SpeechChannel channel,
+    String? apiKey,
+    String? accessToken,
+    String? proxyRoot,
   }) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
@@ -63,19 +85,18 @@ class SpeechRecognitionService {
       if (prompt.isNotEmpty) 'prompt': prompt,
     });
 
-    final url = (customEndpoint != null && customEndpoint.isNotEmpty)
-        ? customEndpoint
+    final url = channel == SpeechChannel.proxy
+        ? '${_normalizeRoot(proxyRoot)}/v1/audio/transcriptions'
         : 'https://api.openai.com/v1/audio/transcriptions';
 
     final response = await _dio.post<dynamic>(
       url,
       data: formData,
       options: Options(
-        headers: {'Authorization': 'Bearer $apiKey'},
+        headers: _authHeaders(accessToken: accessToken, apiKey: apiKey),
       ),
     );
 
-    // Parse JSON response to extract text and token usage
     Map<String, dynamic>? data;
     if (response.data is Map<String, dynamic>) {
       data = response.data as Map<String, dynamic>;
@@ -99,12 +120,108 @@ class SpeechRecognitionService {
     return (text: text, inputTokens: inputTokens, outputTokens: outputTokens);
   }
 
-  Future<TranscriptionResult> _transcribeWithGemini({
+  Future<TranscriptionResult> _transcribeWithAntigravityDirect({
     required String audioFilePath,
-    required String apiKey,
+    required String? accessToken,
+    required String? projectId,
     required String model,
     required String prompt,
-    String? customEndpoint,
+  }) async {
+    print('[AntigravityDirect] Start transcription: $audioFilePath');
+    final fileToUpload = File(audioFilePath);
+    if (!fileToUpload.existsSync()) {
+      throw Exception('找不到音檔：$audioFilePath');
+    }
+
+    final mimeType = audioFilePath.endsWith('.m4a')
+        ? 'audio/mp4'
+        : (audioFilePath.endsWith('.mp3') ? 'audio/mpeg' : 'audio/mp4');
+    final audioBytes = await fileToUpload.readAsBytes();
+    final base64Audio = base64Encode(audioBytes);
+
+    final finalPrompt = prompt.isEmpty
+        ? 'Generate a transcript of the speech.'
+        : prompt;
+
+    final endpoints = [
+      'https://daily-cloudcode-pa.googleapis.com/v1internal:generateContent',
+      'https://cloudcode-pa.googleapis.com/v1internal:generateContent',
+    ];
+
+    final payload = {
+      if (projectId != null && projectId.isNotEmpty) 'project': projectId,
+      'model': model,
+      'request': {
+        'contents': [
+          {
+            'role': 'user',
+            'parts': [
+              {'text': finalPrompt},
+              {
+                'inline_data': {'mime_type': mimeType, 'data': base64Audio},
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    DioException? lastErr;
+    for (final url in endpoints) {
+      try {
+        final response = await _dio.post<Map<String, dynamic>>(
+          url,
+          data: payload,
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+              'User-Agent': 'antigravity/1.0.0 darwin/arm64',
+            },
+          ),
+        );
+
+        final responseObj =
+            response.data?['response'] as Map<String, dynamic>? ??
+            response.data;
+        final candidates = responseObj?['candidates'] as List?;
+        if (candidates == null || candidates.isEmpty) {
+          throw Exception('Antigravity 轉譯失敗：無候選回應');
+        }
+
+        final parts = candidates[0]['content']?['parts'] as List?;
+        if (parts == null || parts.isEmpty) {
+          throw Exception('Antigravity 轉譯失敗：內容為空');
+        }
+
+        final text = (parts[0]['text'] as String? ?? '').trim();
+        final usageMeta =
+            responseObj?['usageMetadata'] as Map<String, dynamic>?;
+        final inputTokens = usageMeta?['promptTokenCount'] as int?;
+        final outputTokens = usageMeta?['candidatesTokenCount'] as int?;
+
+        print('[AntigravityDirect] Success! text: $text');
+        return (
+          text: text,
+          inputTokens: inputTokens,
+          outputTokens: outputTokens,
+        );
+      } on DioException catch (e) {
+        lastErr = e;
+        print('[AntigravityDirect] Failed on $url: ${e.response?.statusCode}');
+      }
+    }
+    throw lastErr ?? Exception('Antigravity 端點連線失敗');
+  }
+
+  Future<TranscriptionResult> _transcribeWithGemini({
+    required String audioFilePath,
+    required String model,
+    required String prompt,
+    required SpeechChannel channel,
+    String? apiKey,
+    String? accessToken,
+    String? proxyRoot,
   }) async {
     print('[Gemini] Start direct transcription: $audioFilePath');
 
@@ -119,11 +236,12 @@ class SpeechRecognitionService {
     final audioBytes = await fileToUpload.readAsBytes();
     final base64Audio = base64Encode(audioBytes);
 
-    final finalPrompt =
-        prompt.isEmpty ? 'Generate a transcript of the speech.' : prompt;
+    final finalPrompt = prompt.isEmpty
+        ? 'Generate a transcript of the speech.'
+        : prompt;
 
-    final url = (customEndpoint != null && customEndpoint.isNotEmpty)
-        ? '$customEndpoint/$model:generateContent'
+    final url = channel == SpeechChannel.proxy
+        ? '${_normalizeRoot(proxyRoot)}/v1beta/models/$model:generateContent'
         : 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
 
     try {
@@ -135,10 +253,7 @@ class SpeechRecognitionService {
               'parts': [
                 {'text': finalPrompt},
                 {
-                  'inline_data': {
-                    'mime_type': mimeType,
-                    'data': base64Audio,
-                  }
+                  'inline_data': {'mime_type': mimeType, 'data': base64Audio},
                 },
               ],
             },
@@ -146,7 +261,12 @@ class SpeechRecognitionService {
         },
         options: Options(
           headers: {
-            'x-goog-api-key': apiKey,
+            ..._authHeaders(
+              accessToken: accessToken,
+              apiKey: apiKey,
+              googleApiKey:
+                  channel == SpeechChannel.official && accessToken == null,
+            ),
             'Content-Type': 'application/json',
           },
         ),
@@ -164,7 +284,6 @@ class SpeechRecognitionService {
 
       final text = (parts[0]['text'] as String? ?? '').trim();
 
-      // Extract token usage from usageMetadata
       final usageMeta =
           response.data?['usageMetadata'] as Map<String, dynamic>?;
       final inputTokens = usageMeta?['promptTokenCount'] as int?;
@@ -177,5 +296,33 @@ class SpeechRecognitionService {
       print('[Gemini] Status: ${e.response?.statusCode}');
       rethrow;
     }
+  }
+
+  Map<String, String> _authHeaders({
+    String? accessToken,
+    String? apiKey,
+    bool googleApiKey = false,
+  }) {
+    if (accessToken != null && accessToken.isNotEmpty) {
+      return {'Authorization': 'Bearer $accessToken'};
+    }
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('缺少使用中憑證');
+    }
+    if (googleApiKey) {
+      return {'x-goog-api-key': apiKey};
+    }
+    return {'Authorization': 'Bearer $apiKey'};
+  }
+
+  String _normalizeRoot(String? raw) {
+    var root = (raw ?? '').trim();
+    if (root.endsWith('/')) {
+      root = root.substring(0, root.length - 1);
+    }
+    if (root.isEmpty) {
+      throw Exception('尚未設定 Proxy 根位址');
+    }
+    return root;
   }
 }

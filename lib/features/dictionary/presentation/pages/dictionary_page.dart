@@ -38,22 +38,27 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 30),
+        padding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: 24,
+          top: 30,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '字典檔',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               '加入常用的專有名詞，提升語音辨識的準確性',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withAlpha(150),
-                  ),
+                color: colorScheme.onSurface.withAlpha(150),
+              ),
             ),
             const SizedBox(height: 24),
             Row(
@@ -110,8 +115,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
             const SizedBox(height: 16),
             Expanded(
               child: wordsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('讀取失敗：$e')),
                 data: (words) => words.isEmpty
                     ? _buildEmptyState(context, colorScheme)
@@ -138,15 +142,15 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
           Text(
             '字典是空的',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface.withAlpha(100),
-                ),
+              color: colorScheme.onSurface.withAlpha(100),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             '加入第一個專有名詞吧',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withAlpha(70),
-                ),
+              color: colorScheme.onSurface.withAlpha(70),
+            ),
           ),
         ],
       ),

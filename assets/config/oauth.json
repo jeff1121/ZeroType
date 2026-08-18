@@ -1,0 +1,13 @@
+{
+  "clientId": "",
+  "authUri": "https://accounts.google.com/o/oauth2/v2/auth",
+  "tokenUri": "https://oauth2.googleapis.com/token",
+  "revokeUri": "https://oauth2.googleapis.com/revoke",
+  "scopes": [
+    "https://www.googleapis.com/auth/generative-language",
+    "https://www.googleapis.com/auth/cloud-platform",
+    "openid",
+    "email",
+    "profile"
+  ]
+}

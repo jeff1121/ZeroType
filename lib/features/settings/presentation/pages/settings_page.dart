@@ -16,8 +16,8 @@ class SettingsPage extends ConsumerStatefulWidget {
   ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBindingObserver, AutoRouteAwareStateMixin<SettingsPage> {
-
+class _SettingsPageState extends ConsumerState<SettingsPage>
+    with WidgetsBindingObserver, AutoRouteAwareStateMixin<SettingsPage> {
   @override
   void initState() {
     super.initState();
@@ -72,18 +72,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 30),
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              bottom: 24,
+              top: 30,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '設定',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // --- General Settings Section ---
                 _SectionHeader(title: '一般設定'),
                 const SizedBox(height: 12),
@@ -96,14 +101,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                       subtitle: '切換應用程式的外觀風格',
                       trailing: _AppToggle(
                         value: isDark,
-                        onChanged: (_) =>
-                            ref.read(themeControllerProvider.notifier).toggleTheme(),
+                        onChanged: (_) => ref
+                            .read(themeControllerProvider.notifier)
+                            .toggleTheme(),
                         activeIcon: Icons.nightlight_round,
                         inactiveIcon: Icons.wb_sunny_rounded,
                       ),
                     ),
                     const Divider(height: 1, indent: 56),
-                    
+
                     // Launch at Startup
                     settings.when(
                       data: (data) => _SettingTile(
@@ -186,9 +192,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // --- Shortcut Section ---
                 _SectionHeader(title: '快捷鍵'),
                 const SizedBox(height: 12),
@@ -196,19 +202,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                   children: [
                     settings.when(
                       data: (data) => InkWell(
-                        onTap: () => ref.read(settingsControllerProvider.notifier).startRecordingHotkey(),
+                        onTap: () => ref
+                            .read(settingsControllerProvider.notifier)
+                            .startRecordingHotkey(),
                         borderRadius: BorderRadius.circular(16),
                         child: _SettingTile(
                           icon: Icons.keyboard,
                           title: '全局錄音快捷鍵',
                           subtitle: '按下此組合鍵即可開始/停止錄音',
                           trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withAlpha(20),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.primary.withAlpha(50),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withAlpha(50),
                               ),
                             ),
                             child: _buildHotkeyDisplay(context, data.hotkey),
@@ -220,9 +235,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // --- Sound Section ---
                 _SectionHeader(title: '音效'),
                 const SizedBox(height: 12),
@@ -289,8 +304,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                         title: '輔助使用權限',
                         subtitle: '自動貼上功能需要此權限以模擬鍵盤動作',
                         isAuthorized: data.isAccessibilityAuthorized,
-                        onCheck: () => const MethodChannel('com.zerotype.app/permission')
-                            .invokeMethod('openAccessibilitySettings'),
+                        actionLabel: data.isAccessibilityAuthorized
+                            ? '打開設定'
+                            : '請求授權',
+                        onCheck: () async {
+                          const channel = MethodChannel(
+                            'com.zerotype.app/permission',
+                          );
+                          if (!data.isAccessibilityAuthorized) {
+                            await channel.invokeMethod('requestAccessibility');
+                          }
+                          await channel.invokeMethod(
+                            'openAccessibilitySettings',
+                          );
+                          ref.invalidate(settingsControllerProvider);
+                        },
                       ),
                       loading: () => const _LoadingTile(),
                       error: (_, __) => const SizedBox.shrink(),
@@ -302,8 +330,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
                         title: '麥克風權限',
                         subtitle: '語音辨識功能需要存取你的麥克風',
                         isAuthorized: data.isMicrophoneAuthorized,
-                        onCheck: () => const MethodChannel('com.zerotype.app/permission')
-                            .invokeMethod('openMicrophoneSettings'),
+                        onCheck: () => const MethodChannel(
+                          'com.zerotype.app/permission',
+                        ).invokeMethod('openMicrophoneSettings'),
                       ),
                       loading: () => const _LoadingTile(),
                       error: (_, __) => const SizedBox.shrink(),
@@ -313,15 +342,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
               ],
             ),
           ),
-          
+
           // --- Hotkey Recorder Overlay ---
           settings.maybeWhen(
-            data: (data) => data.isRecordingHotkey 
-              ? _HotkeyRecorderOverlay(
-                  onSave: (keys) => ref.read(settingsControllerProvider.notifier).saveHotkey(keys),
-                  onClose: () => ref.read(settingsControllerProvider.notifier).stopRecordingHotkey(),
-                )
-              : const SizedBox.shrink(),
+            data: (data) => data.isRecordingHotkey
+                ? _HotkeyRecorderOverlay(
+                    onSave: (keys) => ref
+                        .read(settingsControllerProvider.notifier)
+                        .saveHotkey(keys),
+                    onClose: () => ref
+                        .read(settingsControllerProvider.notifier)
+                        .stopRecordingHotkey(),
+                  )
+                : const SizedBox.shrink(),
             orElse: () => const SizedBox.shrink(),
           ),
         ],
@@ -331,7 +364,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
 
   Widget _buildHotkeyDisplay(BuildContext context, HotKey hotkey) {
     final List<Widget> widgets = [];
-    
+
     if (hotkey.modifiers != null) {
       for (final mod in hotkey.modifiers!) {
         String label = '';
@@ -339,9 +372,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
         if (mod == HotKeyModifier.shift) label = '⇧ Shift';
         if (mod == HotKeyModifier.alt) label = '⌥ Option';
         if (mod == HotKeyModifier.control) label = '⌃ Control';
-        
+
         if (label.isNotEmpty) {
-          if (widgets.isNotEmpty) widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('+')));
+          if (widgets.isNotEmpty)
+            widgets.add(
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text('+'),
+              ),
+            );
           widgets.add(_KeyBadge(label: label));
         }
       }
@@ -356,19 +395,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with WidgetsBinding
       keyLabel = (hotkey.key as LogicalKeyboardKey).keyLabel;
     }
 
-    if (hotkey.key == PhysicalKeyboardKey.space || hotkey.key == LogicalKeyboardKey.space) {
+    if (hotkey.key == PhysicalKeyboardKey.space ||
+        hotkey.key == LogicalKeyboardKey.space) {
       keyLabel = 'Space';
     }
-    
-    if (widgets.isNotEmpty) widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('+')));
+
+    if (widgets.isNotEmpty)
+      widgets.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text('+'),
+        ),
+      );
     widgets.add(_KeyBadge(label: keyLabel.toUpperCase()));
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: widgets,
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: widgets);
   }
-
 }
 
 class _HotkeyRecorderOverlay extends StatefulWidget {
@@ -407,7 +449,7 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
 
     final List<String> parts = [];
     final sortedKeys = List<PhysicalKeyboardKey>.from(_recordedKeys);
-    
+
     // Sort logic
     sortedKeys.sort((a, b) {
       int score(PhysicalKeyboardKey k) {
@@ -417,6 +459,7 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
         if (_isShift(k)) return 3;
         return 4;
       }
+
       return score(a).compareTo(score(b));
     });
 
@@ -437,7 +480,7 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
         if (label.startsWith('Key ')) {
           label = label.substring(4);
         }
-        
+
         // Handle specific cases or ensure it's uppercase
         if (label.length == 1) {
           label = label.toUpperCase();
@@ -449,11 +492,19 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
     setState(() => _displayText = parts.join(' + '));
   }
 
-  bool _isModifier(PhysicalKeyboardKey key) => _isMeta(key) || _isControl(key) || _isAlt(key) || _isShift(key);
-  bool _isMeta(PhysicalKeyboardKey key) => key == PhysicalKeyboardKey.metaLeft || key == PhysicalKeyboardKey.metaRight;
-  bool _isControl(PhysicalKeyboardKey key) => key == PhysicalKeyboardKey.controlLeft || key == PhysicalKeyboardKey.controlRight;
-  bool _isAlt(PhysicalKeyboardKey key) => key == PhysicalKeyboardKey.altLeft || key == PhysicalKeyboardKey.altRight;
-  bool _isShift(PhysicalKeyboardKey key) => key == PhysicalKeyboardKey.shiftLeft || key == PhysicalKeyboardKey.shiftRight;
+  bool _isModifier(PhysicalKeyboardKey key) =>
+      _isMeta(key) || _isControl(key) || _isAlt(key) || _isShift(key);
+  bool _isMeta(PhysicalKeyboardKey key) =>
+      key == PhysicalKeyboardKey.metaLeft ||
+      key == PhysicalKeyboardKey.metaRight;
+  bool _isControl(PhysicalKeyboardKey key) =>
+      key == PhysicalKeyboardKey.controlLeft ||
+      key == PhysicalKeyboardKey.controlRight;
+  bool _isAlt(PhysicalKeyboardKey key) =>
+      key == PhysicalKeyboardKey.altLeft || key == PhysicalKeyboardKey.altRight;
+  bool _isShift(PhysicalKeyboardKey key) =>
+      key == PhysicalKeyboardKey.shiftLeft ||
+      key == PhysicalKeyboardKey.shiftRight;
 
   @override
   Widget build(BuildContext context) {
@@ -473,8 +524,9 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
             }
             _currentlyHeldKeys.add(event.physicalKey);
             _updateDisplayText();
-            
-            if (event.physicalKey == PhysicalKeyboardKey.escape && _currentlyHeldKeys.length == 1) {
+
+            if (event.physicalKey == PhysicalKeyboardKey.escape &&
+                _currentlyHeldKeys.length == 1) {
               _recordedKeys.clear();
               widget.onClose();
               return;
@@ -494,11 +546,16 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.keyboard, color: Colors.orangeAccent, size: 64),
+                    const Icon(
+                      Icons.keyboard,
+                      color: Colors.orangeAccent,
+                      size: 64,
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       '錄製快捷鍵組合',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -506,17 +563,24 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                     const SizedBox(height: 32),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 48,
+                        vertical: 32,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: _recordedKeys.isNotEmpty ? Colors.orangeAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1),
+                          color: _recordedKeys.isNotEmpty
+                              ? Colors.orangeAccent.withOpacity(0.5)
+                              : Colors.white.withOpacity(0.1),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orangeAccent.withOpacity(_recordedKeys.isNotEmpty ? 0.1 : 0),
+                            color: Colors.orangeAccent.withOpacity(
+                              _recordedKeys.isNotEmpty ? 0.1 : 0,
+                            ),
                             blurRadius: 40,
                             spreadRadius: 10,
                           ),
@@ -525,7 +589,9 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                       child: Text(
                         _displayText,
                         style: TextStyle(
-                          color: _recordedKeys.isNotEmpty ? Colors.orangeAccent : Colors.white24,
+                          color: _recordedKeys.isNotEmpty
+                              ? Colors.orangeAccent
+                              : Colors.white24,
                           fontSize: 56,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
@@ -549,10 +615,18 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white60,
                             side: const BorderSide(color: Colors.white24),
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 18,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          child: const Text('取消', style: TextStyle(fontSize: 16)),
+                          child: const Text(
+                            '取消',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                         const SizedBox(width: 24),
                         if (_recordedKeys.isNotEmpty)
@@ -561,13 +635,21 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orangeAccent,
                               foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 48,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               elevation: 10,
                             ),
                             child: const Text(
                               '儲存設定',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                       ],
@@ -579,7 +661,11 @@ class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
                 top: 40,
                 right: 40,
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54, size: 36),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white54,
+                    size: 36,
+                  ),
                   onPressed: widget.onClose,
                 ),
               ),
@@ -600,9 +686,9 @@ class _SectionHeader extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
+        color: Theme.of(context).colorScheme.primary,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }
@@ -632,6 +718,7 @@ class _PermissionTile extends StatelessWidget {
   final String subtitle;
   final bool isAuthorized;
   final VoidCallback onCheck;
+  final String actionLabel;
 
   const _PermissionTile({
     required this.icon,
@@ -639,6 +726,7 @@ class _PermissionTile extends StatelessWidget {
     required this.subtitle,
     required this.isAuthorized,
     required this.onCheck,
+    this.actionLabel = '打開設定',
   });
 
   @override
@@ -658,7 +746,9 @@ class _PermissionTile extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isAuthorized ? Colors.green : Colors.red).withOpacity(0.4),
+                  color: (isAuthorized ? Colors.green : Colors.red).withOpacity(
+                    0.4,
+                  ),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
@@ -681,7 +771,7 @@ class _PermissionTile extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            child: const Text('打開設定'),
+            child: Text(actionLabel),
           ),
         ],
       ),
@@ -707,7 +797,8 @@ class _SettingTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center, // Ensure vertical center alignment
+        crossAxisAlignment:
+            CrossAxisAlignment.center, // Ensure vertical center alignment
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 16),
@@ -715,12 +806,17 @@ class _SettingTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ],
             ),
@@ -760,7 +856,9 @@ class _AppToggle extends StatelessWidget {
           child: Icon(
             value ? activeIcon : inactiveIcon,
             size: 20,
-            color: value ? Colors.orangeAccent : Theme.of(context).colorScheme.primary,
+            color: value
+                ? Colors.orangeAccent
+                : Theme.of(context).colorScheme.primary,
           ),
         ),
       ),
@@ -828,8 +926,8 @@ class _SoundPickerTile extends StatelessWidget {
     final effectivePath = kSystemSoundLabels.containsKey(selectedPath)
         ? selectedPath
         : (kSystemSoundLabels.containsKey(kDefaultStartSound)
-            ? kDefaultStartSound
-            : kSystemSoundLabels.keys.first);
+              ? kDefaultStartSound
+              : kSystemSoundLabels.keys.first);
     final selectedLabel = kSystemSoundLabels[effectivePath] ?? '';
 
     return _SettingTile(

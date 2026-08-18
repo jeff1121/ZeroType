@@ -1,0 +1,74 @@
+name: Build and Release Desktop Apps
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows Release
+        run: flutter build windows --release
+
+      - name: Package Windows Release (Zip)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath release\ZeroType-Windows-x64.zip
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeroType-Windows-x64
+          path: release\ZeroType-Windows-x64.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS Release
+        run: flutter build macos --release
+
+      - name: Package macOS Release (DMG & Zip)
+        run: |
+          mkdir -p release
+          hdiutil create -volname "ZeroType" -srcfolder "build/macos/Build/Products/Release/Zero Type.app" -ov -format UDZO "release/ZeroType-macOS.dmg"
+          cd build/macos/Build/Products/Release
+          zip -r -y -q "../../../../../release/ZeroType-macOS-arm64.zip" "Zero Type.app"
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeroType-macOS
+          path: release/*

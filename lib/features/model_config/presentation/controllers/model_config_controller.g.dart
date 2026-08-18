@@ -55,12 +55,7 @@ final class SpeechProviderControllerProvider
     extends
         $AsyncNotifierProvider<
           SpeechProviderController,
-          ({
-            String? apiKey,
-            String? customEndpoint,
-            String? modelId,
-            String? providerId,
-          })
+          SpeechConnectionState
         > {
   SpeechProviderControllerProvider._()
     : super(
@@ -82,78 +77,111 @@ final class SpeechProviderControllerProvider
 }
 
 String _$speechProviderControllerHash() =>
-    r'9f533aaad184789dbd3efc8467e110a97e9f6cea';
+    r'1356631c1034c20a6aa3e23cac33017d8a296045';
 
 abstract class _$SpeechProviderController
-    extends
-        $AsyncNotifier<
-          ({
-            String? apiKey,
-            String? customEndpoint,
-            String? modelId,
-            String? providerId,
-          })
-        > {
-  FutureOr<
-    ({
-      String? apiKey,
-      String? customEndpoint,
-      String? modelId,
-      String? providerId,
-    })
-  >
-  build();
+    extends $AsyncNotifier<SpeechConnectionState> {
+  FutureOr<SpeechConnectionState> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final ref =
         this.ref
-            as $Ref<
-              AsyncValue<
-                ({
-                  String? apiKey,
-                  String? customEndpoint,
-                  String? modelId,
-                  String? providerId,
-                })
-              >,
-              ({
-                String? apiKey,
-                String? customEndpoint,
-                String? modelId,
-                String? providerId,
-              })
-            >;
+            as $Ref<AsyncValue<SpeechConnectionState>, SpeechConnectionState>;
     final element =
         ref.element
             as $ClassProviderElement<
               AnyNotifier<
-                AsyncValue<
-                  ({
-                    String? apiKey,
-                    String? customEndpoint,
-                    String? modelId,
-                    String? providerId,
-                  })
-                >,
-                ({
-                  String? apiKey,
-                  String? customEndpoint,
-                  String? modelId,
-                  String? providerId,
-                })
+                AsyncValue<SpeechConnectionState>,
+                SpeechConnectionState
               >,
-              AsyncValue<
-                ({
-                  String? apiKey,
-                  String? customEndpoint,
-                  String? modelId,
-                  String? providerId,
-                })
-              >,
+              AsyncValue<SpeechConnectionState>,
               Object?,
               Object?
             >;
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(proxyModels)
+final proxyModelsProvider = ProxyModelsProvider._();
+
+final class ProxyModelsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AiModel>>,
+          List<AiModel>,
+          FutureOr<List<AiModel>>
+        >
+    with $FutureModifier<List<AiModel>>, $FutureProvider<List<AiModel>> {
+  ProxyModelsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'proxyModelsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$proxyModelsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AiModel>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AiModel>> create(Ref ref) {
+    return proxyModels(ref);
+  }
+}
+
+String _$proxyModelsHash() => r'18886d28aaf9c87665d9ceb307f04eae4395dea7';
+
+/// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
+
+@ProviderFor(officialModels)
+final officialModelsProvider = OfficialModelsProvider._();
+
+/// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
+
+final class OfficialModelsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AiModel>?>,
+          List<AiModel>?,
+          FutureOr<List<AiModel>?>
+        >
+    with $FutureModifier<List<AiModel>?>, $FutureProvider<List<AiModel>?> {
+  /// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
+  OfficialModelsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: _noRetry,
+        name: r'officialModelsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$officialModelsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AiModel>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AiModel>?> create(Ref ref) {
+    return officialModels(ref);
+  }
+}
+
+String _$officialModelsHash() => r'0325b40765d7c4304aa4ce54678400c7bf8c47e0';

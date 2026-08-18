@@ -27,10 +27,11 @@ class ThemeController extends _$ThemeController {
   }
 
   Future<void> toggleTheme() async {
-    final isDark = state == ThemeMode.dark || 
-        (state == ThemeMode.system && 
-         PlatformDispatcher.instance.platformBrightness == Brightness.dark);
-    
+    final isDark =
+        state == ThemeMode.dark ||
+        (state == ThemeMode.system &&
+            PlatformDispatcher.instance.platformBrightness == Brightness.dark);
+
     await setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
   }
 }

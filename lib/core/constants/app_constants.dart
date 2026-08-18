@@ -7,6 +7,13 @@ class AppConstants {
   static const String refinementPromptKey = 'text_refinement_prompt';
   static const String selectedSpeechProviderKey = 'selected_speech_provider';
   static const String selectedSpeechModelKey = 'selected_speech_model';
+  static const String selectedSpeechChannelKey = 'selected_speech_channel';
+  static const String officialCredentialMethodKey =
+      'official_credential_method';
+  static const String proxyRootKey = 'proxy_root';
+  static const String geminiOauthAccessTokenKey = 'gemini_oauth_access_token';
+  static const String geminiOauthRefreshTokenKey = 'gemini_oauth_refresh_token';
+  static const String geminiOauthExpiryKey = 'gemini_oauth_expiry';
   static const String selectedRefinementProviderKey =
       'selected_refinement_provider';
   static const String selectedRefinementModelKey = 'selected_refinement_model';

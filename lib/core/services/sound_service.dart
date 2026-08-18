@@ -32,8 +32,7 @@ class SoundService {
 
   SoundService({required SharedPreferences prefs}) : _prefs = prefs;
 
-  bool get soundEnabled =>
-      _prefs.getBool(AppConstants.soundEnabledKey) ?? true;
+  bool get soundEnabled => _prefs.getBool(AppConstants.soundEnabledKey) ?? true;
 
   String get startSoundPath =>
       _prefs.getString(AppConstants.startSoundKey) ?? kDefaultStartSound;

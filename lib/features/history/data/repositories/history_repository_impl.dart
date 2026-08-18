@@ -12,8 +12,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   static const _statsFileName = 'history_stats.json';
   static const _audioDirName = 'history_audio';
 
-  Future<Directory> _appSupportDir() async =>
-      getApplicationSupportDirectory();
+  Future<Directory> _appSupportDir() async => getApplicationSupportDirectory();
 
   Future<File> _historyFile() async {
     final dir = await _appSupportDir();
@@ -68,8 +67,10 @@ class HistoryRepositoryImpl implements HistoryRepository {
   @override
   Future<void> deleteRecord(String id) async {
     final records = await getRecords();
-    final target = records.firstWhere((r) => r.id == id,
-        orElse: () => throw StateError('Record $id not found'));
+    final target = records.firstWhere(
+      (r) => r.id == id,
+      orElse: () => throw StateError('Record $id not found'),
+    );
     // Delete audio file if it exists
     if (target.audioPath != null) {
       final f = File(target.audioPath!);
@@ -102,8 +103,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   Future<void> purgeExpiredRecords(int retentionDays) async {
-    final cutoff =
-        DateTime.now().subtract(Duration(days: retentionDays));
+    final cutoff = DateTime.now().subtract(Duration(days: retentionDays));
     final records = await getRecords();
     final expired = records.where((r) => r.createdAt.isBefore(cutoff)).toList();
     if (expired.isEmpty) return;
@@ -114,7 +114,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
         if (f.existsSync()) await f.delete();
       }
     }
-    final remaining = records.where((r) => r.createdAt.isAfter(cutoff) || r.createdAt == cutoff).toList();
+    final remaining = records
+        .where((r) => r.createdAt.isAfter(cutoff) || r.createdAt == cutoff)
+        .toList();
     await _saveRecords(remaining);
     print('[HistoryRepository] Purged ${expired.length} expired records.');
   }

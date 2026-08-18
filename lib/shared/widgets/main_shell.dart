@@ -40,8 +40,11 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.security_outlined,
-                color: Theme.of(context).colorScheme.primary, size: 22),
+            Icon(
+              Icons.security_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 22,
+            ),
             const SizedBox(width: 8),
             const Text('需要系統權限'),
           ],
@@ -91,21 +94,18 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
-      children: [
-        _buildMain(),
-        const RecordingOverlay(),
-      ],
+      children: [_buildMain(), const RecordingOverlay()],
     );
   }
 
   Widget _buildMain() {
     return AutoTabsRouter(
       routes: const [
-        ModelConfigRoute(),   // 0 模型
-        PromptRoute(),         // 1 提示詞
-        DictionaryRoute(),     // 2 字典檔
-        HistoryRoute(),        // 3 歷史
-        SettingsRoute(),       // 4 設定
+        ModelConfigRoute(), // 0 模型
+        PromptRoute(), // 1 提示詞
+        DictionaryRoute(), // 2 字典檔
+        HistoryRoute(), // 3 歷史
+        SettingsRoute(), // 4 設定
       ],
       builder: (context, child) {
         final tabsRouter = AutoTabsRouter.of(context);
@@ -128,9 +128,9 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
                   child: Text(
                     'Zero Type',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),
@@ -226,16 +226,28 @@ class _PermissionItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(description,
-                  style: TextStyle(
-                      fontSize: 12, color: colorScheme.onSurfaceVariant)),
-              Text(note,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7))),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                note,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+              ),
             ],
           ),
         ),

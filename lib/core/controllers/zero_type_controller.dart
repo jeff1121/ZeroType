@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/constants/model_pricing.dart';
 import 'package:zero_type/core/constants/app_constants.dart';
@@ -10,10 +8,13 @@ import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/services/recording_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero_type/core/services/sound_service.dart';
+import 'package:zero_type/core/services/antigravity_auth_source.dart';
+import 'package:zero_type/core/services/gemini_oauth_service.dart';
 import 'package:zero_type/core/services/speech_recognition_service.dart';
 import 'package:zero_type/core/state/zero_type_state.dart';
 import 'package:zero_type/features/history/domain/entities/transcription_record.dart';
 import 'package:zero_type/features/history/domain/repositories/history_repository.dart';
+import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 import 'package:zero_type/features/model_config/presentation/controllers/model_config_controller.dart';
 import 'package:zero_type/features/prompt/presentation/controllers/prompt_controller.dart';
 import 'package:zero_type/features/dictionary/presentation/controllers/dictionary_controller.dart';
@@ -42,7 +43,9 @@ class ZeroTypeController extends _$ZeroTypeController {
   }
 
   Future<void> toggleRecording() async {
-    print('[ZeroTypeController] Hotkey triggered! Current status: ${state.status}');
+    print(
+      '[ZeroTypeController] Hotkey triggered! Current status: ${state.status}',
+    );
     if (state.status == ZeroTypeStatus.recording) {
       await _stopAndProcess();
     } else if (state.status == ZeroTypeStatus.idle) {
@@ -73,10 +76,24 @@ class ZeroTypeController extends _$ZeroTypeController {
     _cancelled = false;
 
     final config = await ref.read(speechProviderControllerProvider.future);
-    if (config.providerId == null || config.providerId!.isEmpty ||
-        config.apiKey == null || config.apiKey!.isEmpty ||
-        config.modelId == null || config.modelId!.isEmpty) {
+    if (!config.isReady) {
       await _showNativeOverlay('error', '請先完成語音辨識模型設定');
+      await getIt<SoundService>().playCancelSound();
+      await Future.delayed(const Duration(seconds: 3));
+      if (ref.mounted && !_cancelled) {
+        state = const ZeroTypeState();
+        await _hideNativeOverlay();
+      }
+      return;
+    }
+
+    try {
+      await _resolveAuth(config);
+    } catch (e) {
+      await _showNativeOverlay(
+        'error',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
       await getIt<SoundService>().playCancelSound();
       await Future.delayed(const Duration(seconds: 3));
       if (ref.mounted && !_cancelled) {
@@ -133,8 +150,11 @@ class ZeroTypeController extends _$ZeroTypeController {
     _recordingStartTime = DateTime.now();
 
     // Start max-duration safety timer from user setting (default 1 min, max 5 min)
-    final maxMinutes = getIt<SharedPreferences>()
-        .getInt(AppConstants.maxRecordingMinutesKey) ?? 1;
+    final maxMinutes =
+        getIt<SharedPreferences>().getInt(
+          AppConstants.maxRecordingMinutesKey,
+        ) ??
+        1;
     _maxDurationTimer = Timer(Duration(minutes: maxMinutes), () {
       if (state.status == ZeroTypeStatus.recording) {
         print('[ZeroType] Max recording duration reached, auto-stopping.');
@@ -173,27 +193,67 @@ class ZeroTypeController extends _$ZeroTypeController {
   Future<TranscriptionResult?> _transcribe(String filePath) async {
     final config = await ref.read(speechProviderControllerProvider.future);
     final prompt = await ref.read(speechPromptControllerProvider.future);
-    final dictionaryPrompt =
-        await ref.read(dictionaryRepositoryProvider).buildDictionaryPrompt();
+    final dictionaryPrompt = await ref
+        .read(dictionaryRepositoryProvider)
+        .buildDictionaryPrompt();
 
-    if (config.providerId == null ||
-        config.apiKey == null ||
-        config.modelId == null) {
+    if (!config.isReady ||
+        config.providerId == null ||
+        config.modelId == null ||
+        config.activeCredentialMethod == null) {
       throw Exception('請先完成語音辨識模型設定');
     }
 
-    final finalPrompt =
-        dictionaryPrompt.isEmpty ? prompt : '$prompt\n\n$dictionaryPrompt';
+    final auth = await _resolveAuth(config);
+    final finalPrompt = dictionaryPrompt.isEmpty
+        ? prompt
+        : '$prompt\n\n$dictionaryPrompt';
 
     final service = getIt<SpeechRecognitionService>();
     return service.transcribe(
       audioFilePath: filePath,
-      apiKey: config.apiKey!,
+      apiKey: auth.apiKey,
+      accessToken: auth.accessToken,
+      antigravityProjectId: auth.antigravityProjectId,
+      isAntigravity:
+          config.activeCredentialMethod == CredentialMethod.antigravityOauth,
       provider: config.providerId!,
       model: config.modelId!,
       prompt: finalPrompt,
-      customEndpoint: config.customEndpoint,
+      channel: config.channel,
+      proxyRoot: config.proxyRoot,
     );
+  }
+
+  Future<({String? apiKey, String? accessToken, String? antigravityProjectId})>
+  _resolveAuth(SpeechConnectionState config) async {
+    switch (config.activeCredentialMethod) {
+      case CredentialMethod.apiKey:
+        return (
+          apiKey: config.activeApiKey,
+          accessToken: null,
+          antigravityProjectId: null,
+        );
+      case CredentialMethod.geminiOauth:
+        try {
+          final token = await getIt<GeminiOauthService>().resolveAccessToken();
+          return (apiKey: null, accessToken: token, antigravityProjectId: null);
+        } catch (_) {
+          throw Exception('Gemini OAuth 憑證失效');
+        }
+      case CredentialMethod.antigravityOauth:
+        final data = await getIt<AntigravityAuthSource>().getAuthData();
+        if (data == null) {
+          throw Exception('Antigravity 本機登入已失效');
+        }
+        return (
+          apiKey: null,
+          accessToken: data.accessToken,
+          antigravityProjectId: data.projectId,
+        );
+      case null:
+        throw Exception('請先完成語音辨識模型設定');
+    }
   }
 
   Future<void> _stopAndProcess() async {
@@ -245,7 +305,9 @@ class ZeroTypeController extends _$ZeroTypeController {
         audioPath: audioHistoryPath,
         durationMs: durationMs,
         provider: config.providerId ?? '',
+        channel: config.channel.id,
         model: config.modelId ?? '',
+        credentialMethod: config.activeCredentialMethod?.id,
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
         costUsd: calculateCost(

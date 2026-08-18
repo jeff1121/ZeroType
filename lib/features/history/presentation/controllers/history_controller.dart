@@ -97,10 +97,10 @@ class HistoryController extends _$HistoryController {
       if (Platform.isMacOS) {
         await Process.run('open', ['-R', audioPath]);
       } else if (Platform.isWindows) {
-        await Process.run(
-          'explorer.exe',
-          ['/select,', audioPath.replaceAll('/', '\\')],
-        );
+        await Process.run('explorer.exe', [
+          '/select,',
+          audioPath.replaceAll('/', '\\'),
+        ]);
       }
     } catch (e) {
       print('[HistoryController] revealInFinder error: $e');

@@ -419,11 +419,18 @@ class AppDelegate: FlutterAppDelegate {
     channel.setMethodCallHandler { (call, result) in
       switch call.method {
       case "checkAccessibility":
-        // Use the same API as simulatePaste() but without showing the prompt.
-        // AXIsProcessTrusted() can sometimes return stale results; the options
-        // variant forces a fresh lookup from the TCC database.
+        // 兩種查詢都看：options 版有時對 adhoc debug 包會回過期的 false。
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        let trustedWithOptions = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        let trustedPlain = AXIsProcessTrusted()
+        let isTrusted = trustedWithOptions || trustedPlain
+        NSLog("[ZeroType] accessibility options=\(trustedWithOptions) plain=\(trustedPlain) exe=\(CommandLine.arguments.first ?? "")")
+        result(isTrusted)
+      case "requestAccessibility":
+        // 這會跳出系統授權對話框，才能把「清單已開」綁到目前這個 debug 行程。
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         let isTrusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        NSLog("[ZeroType] requestAccessibility trusted=\(isTrusted)")
         result(isTrusted)
       case "openAccessibilitySettings":
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!

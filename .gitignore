@@ -6,6 +6,7 @@
 .claude/
 .idea/
 *.dmg
+release/
 
 ### Dart ###
 # See https://www.dartlang.org/guides/libraries/private-files

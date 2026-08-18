@@ -52,10 +52,10 @@ class RecordingService {
       _amplitudeSubscription = _recorder
           .onAmplitudeChanged(const Duration(milliseconds: 100))
           .listen((amp) {
-        // Map practical speech range (-50 dBFS silence → -5 dBFS loud) to 0–1
-        final normalized = ((amp.current + 50) / 45).clamp(0.0, 1.0);
-        onAmplitude(normalized);
-      });
+            // Map practical speech range (-50 dBFS silence → -5 dBFS loud) to 0–1
+            final normalized = ((amp.current + 50) / 45).clamp(0.0, 1.0);
+            onAmplitude(normalized);
+          });
     }
   }
 
@@ -74,7 +74,9 @@ class RecordingService {
     }
     try {
       await _recorder.stop().timeout(const Duration(seconds: 8));
-      print('[RecordingService] _recorder.stop() completed. path=$_currentFilePath');
+      print(
+        '[RecordingService] _recorder.stop() completed. path=$_currentFilePath',
+      );
     } catch (e) {
       print('[RecordingService] _recorder.stop() error/timeout: $e');
     }

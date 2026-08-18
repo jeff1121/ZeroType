@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:zero_type/main.dart';
+import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('官方通道選 API Key 且模型齊全時視為已完成設定', () {
+    const actual = SpeechConnectionState(
+      providerId: 'gemini',
+      channel: SpeechChannel.official,
+      officialModelId: 'gemini-2.5-flash',
+      proxyModelId: null,
+      officialApiKey: 'test-key',
+      proxyApiKey: null,
+      proxyRoot: null,
+      officialCredentialMethod: CredentialMethod.apiKey,
+      geminiOauthConnected: false,
+      antigravityAvailable: false,
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(actual.isReady, isTrue);
+    expect(actual.activeCredentialMethod, CredentialMethod.apiKey);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  test('使用中憑證未選擇時視為尚未完成設定', () {
+    const actual = SpeechConnectionState(
+      providerId: 'gemini',
+      channel: SpeechChannel.official,
+      officialModelId: 'gemini-2.5-flash',
+      proxyModelId: null,
+      officialApiKey: 'test-key',
+      proxyApiKey: null,
+      proxyRoot: null,
+      officialCredentialMethod: null,
+      geminiOauthConnected: true,
+      antigravityAvailable: true,
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(actual.isReady, isFalse);
   });
 }

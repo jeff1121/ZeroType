@@ -18,9 +18,7 @@ class AiProvider {
 }
 
 class ProvidersConfig {
-  const ProvidersConfig({
-    required this.speechRecognition,
-  });
+  const ProvidersConfig({required this.speechRecognition});
 
   final List<AiProvider> speechRecognition;
 }

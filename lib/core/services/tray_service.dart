@@ -21,15 +21,9 @@ class TrayService with TrayListener {
   Future<void> _buildMenu() async {
     final menu = Menu(
       items: [
-        MenuItem(
-          key: 'show',
-          label: '顯示視窗',
-        ),
+        MenuItem(key: 'show', label: '顯示視窗'),
         MenuItem.separator(),
-        MenuItem(
-          key: 'quit',
-          label: '結束 ZeroType',
-        ),
+        MenuItem(key: 'quit', label: '結束 ZeroType'),
       ],
     );
     await trayManager.setContextMenu(menu);

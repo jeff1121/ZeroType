@@ -28,11 +28,10 @@ class ZeroTypeState {
     double? amplitude,
     String? errorMessage,
     String? result,
-  }) =>
-      ZeroTypeState(
-        status: status ?? this.status,
-        amplitude: amplitude ?? this.amplitude,
-        errorMessage: errorMessage ?? this.errorMessage,
-        result: result ?? this.result,
-      );
+  }) => ZeroTypeState(
+    status: status ?? this.status,
+    amplitude: amplitude ?? this.amplitude,
+    errorMessage: errorMessage ?? this.errorMessage,
+    result: result ?? this.result,
+  );
 }

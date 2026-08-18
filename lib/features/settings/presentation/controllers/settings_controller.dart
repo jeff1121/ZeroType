@@ -22,8 +22,10 @@ class SettingsController extends _$SettingsController {
 
     try {
       print('[SettingsController] Checking if launch at startup is enabled...');
-      final isLaunchEnabled = getIt<SharedPreferences>().getBool(AppConstants.launchAtStartupKey) ?? false;
-      
+      final isLaunchEnabled =
+          getIt<SharedPreferences>().getBool(AppConstants.launchAtStartupKey) ??
+          false;
+
       print('[SettingsController] Fetching current hotkey...');
       final hotkey = getIt<HotkeyService>().currentHotkey;
 
@@ -33,10 +35,14 @@ class SettingsController extends _$SettingsController {
 
       final prefs = getIt<SharedPreferences>();
       final soundEnabled = prefs.getBool(AppConstants.soundEnabledKey) ?? true;
-      final startSound = prefs.getString(AppConstants.startSoundKey) ?? kDefaultStartSound;
-      final stopSound = prefs.getString(AppConstants.stopSoundKey) ?? kDefaultStopSound;
-      final historyRetentionDays = prefs.getInt(AppConstants.historyRetentionDaysKey) ?? 7;
-      final maxRecordingMinutes = prefs.getInt(AppConstants.maxRecordingMinutesKey) ?? 1;
+      final startSound =
+          prefs.getString(AppConstants.startSoundKey) ?? kDefaultStartSound;
+      final stopSound =
+          prefs.getString(AppConstants.stopSoundKey) ?? kDefaultStopSound;
+      final historyRetentionDays =
+          prefs.getInt(AppConstants.historyRetentionDaysKey) ?? 7;
+      final maxRecordingMinutes =
+          prefs.getInt(AppConstants.maxRecordingMinutesKey) ?? 1;
 
       print('[SettingsController] Build complete.');
       return SettingsState(
@@ -65,13 +71,18 @@ class SettingsController extends _$SettingsController {
         await LaunchAtStartup.instance.disable();
       }
     } on MissingPluginException {
-      print('[SettingsController] toggleLaunchAtStartup failed: plugin missing.');
+      print(
+        '[SettingsController] toggleLaunchAtStartup failed: plugin missing.',
+      );
       return;
     } catch (e) {
       print('[SettingsController] toggleLaunchAtStartup error: $e');
       return;
     }
-    await getIt<SharedPreferences>().setBool(AppConstants.launchAtStartupKey, value);
+    await getIt<SharedPreferences>().setBool(
+      AppConstants.launchAtStartupKey,
+      value,
+    );
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(launchAtStartup: value));
@@ -93,28 +104,36 @@ class SettingsController extends _$SettingsController {
     print('[SettingsController] Stopping hotkey recording...');
     final currentState = state.value;
     if (currentState == null) return;
-    
+
     // Re-enable global hotkey
     getIt<HotkeyService>().resume();
-    
+
     state = AsyncData(currentState.copyWith(isRecordingHotkey: false));
   }
 
   Future<void> saveHotkey(List<PhysicalKeyboardKey> keys) async {
     print('[SettingsController] Saving hotkey with keys: $keys');
-    
+
     final List<HotKeyModifier> modifiers = [];
     PhysicalKeyboardKey? mainKey;
 
     for (final key in keys) {
-      if (key == PhysicalKeyboardKey.metaLeft || key == PhysicalKeyboardKey.metaRight) {
-        if (!modifiers.contains(HotKeyModifier.meta)) modifiers.add(HotKeyModifier.meta);
-      } else if (key == PhysicalKeyboardKey.controlLeft || key == PhysicalKeyboardKey.controlRight) {
-        if (!modifiers.contains(HotKeyModifier.control)) modifiers.add(HotKeyModifier.control);
-      } else if (key == PhysicalKeyboardKey.altLeft || key == PhysicalKeyboardKey.altRight) {
-        if (!modifiers.contains(HotKeyModifier.alt)) modifiers.add(HotKeyModifier.alt);
-      } else if (key == PhysicalKeyboardKey.shiftLeft || key == PhysicalKeyboardKey.shiftRight) {
-        if (!modifiers.contains(HotKeyModifier.shift)) modifiers.add(HotKeyModifier.shift);
+      if (key == PhysicalKeyboardKey.metaLeft ||
+          key == PhysicalKeyboardKey.metaRight) {
+        if (!modifiers.contains(HotKeyModifier.meta))
+          modifiers.add(HotKeyModifier.meta);
+      } else if (key == PhysicalKeyboardKey.controlLeft ||
+          key == PhysicalKeyboardKey.controlRight) {
+        if (!modifiers.contains(HotKeyModifier.control))
+          modifiers.add(HotKeyModifier.control);
+      } else if (key == PhysicalKeyboardKey.altLeft ||
+          key == PhysicalKeyboardKey.altRight) {
+        if (!modifiers.contains(HotKeyModifier.alt))
+          modifiers.add(HotKeyModifier.alt);
+      } else if (key == PhysicalKeyboardKey.shiftLeft ||
+          key == PhysicalKeyboardKey.shiftRight) {
+        if (!modifiers.contains(HotKeyModifier.shift))
+          modifiers.add(HotKeyModifier.shift);
       } else {
         // Take the last non-modifier key as the main key
         mainKey = key;
@@ -134,22 +153,24 @@ class SettingsController extends _$SettingsController {
     );
 
     await getIt<HotkeyService>().updateHotkey(newHotKey);
-    
+
     // Stop recording and trigger refresh
     final currentState = state.value;
     if (currentState != null) {
-      state = AsyncData(currentState.copyWith(
-        isRecordingHotkey: false,
-        hotkey: newHotKey,
-      ));
+      state = AsyncData(
+        currentState.copyWith(isRecordingHotkey: false, hotkey: newHotKey),
+      );
     }
-    
+
     // Resume local hotkey (already handled in stopRecordingHotkey but stay safe)
     getIt<HotkeyService>().resume();
   }
 
   Future<void> toggleSound(bool value) async {
-    await getIt<SharedPreferences>().setBool(AppConstants.soundEnabledKey, value);
+    await getIt<SharedPreferences>().setBool(
+      AppConstants.soundEnabledKey,
+      value,
+    );
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(soundEnabled: value));
@@ -157,7 +178,10 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> setStartSound(String path) async {
-    await getIt<SharedPreferences>().setString(AppConstants.startSoundKey, path);
+    await getIt<SharedPreferences>().setString(
+      AppConstants.startSoundKey,
+      path,
+    );
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(startSound: path));
@@ -173,7 +197,10 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> setHistoryRetentionDays(int days) async {
-    await getIt<SharedPreferences>().setInt(AppConstants.historyRetentionDaysKey, days);
+    await getIt<SharedPreferences>().setInt(
+      AppConstants.historyRetentionDaysKey,
+      days,
+    );
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(historyRetentionDays: days));
@@ -181,7 +208,10 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> setMaxRecordingMinutes(int minutes) async {
-    await getIt<SharedPreferences>().setInt(AppConstants.maxRecordingMinutesKey, minutes);
+    await getIt<SharedPreferences>().setInt(
+      AppConstants.maxRecordingMinutesKey,
+      minutes,
+    );
     final currentState = state.value;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(maxRecordingMinutes: minutes));
@@ -196,18 +226,22 @@ class SettingsController extends _$SettingsController {
 
     final currentState = state.value;
     if (currentState != null) {
-      state = AsyncData(currentState.copyWith(
-        isAccessibilityAuthorized: isAccessibility,
-        isMicrophoneAuthorized: isMicrophone,
-      ));
+      state = AsyncData(
+        currentState.copyWith(
+          isAccessibilityAuthorized: isAccessibility,
+          isMicrophoneAuthorized: isMicrophone,
+        ),
+      );
     } else {
       // State is still loading (initial build not done yet);
       // wait for it to complete, then update
       state.whenData((s) {
-        state = AsyncData(s.copyWith(
-          isAccessibilityAuthorized: isAccessibility,
-          isMicrophoneAuthorized: isMicrophone,
-        ));
+        state = AsyncData(
+          s.copyWith(
+            isAccessibilityAuthorized: isAccessibility,
+            isMicrophoneAuthorized: isMicrophone,
+          ),
+        );
       });
     }
   }

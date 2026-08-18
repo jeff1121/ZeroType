@@ -124,10 +124,8 @@ class _ProviderSectionState extends State<ProviderSection>
                     children: [
                       Text(
                         widget.title,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       if (widget.isRequired) ...[
                         const SizedBox(width: 6),
@@ -156,8 +154,8 @@ class _ProviderSectionState extends State<ProviderSection>
                   Text(
                     widget.subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withAlpha(120),
-                        ),
+                      color: colorScheme.onSurface.withAlpha(120),
+                    ),
                   ),
                 ],
               ),
@@ -207,10 +205,10 @@ class _ProviderSectionState extends State<ProviderSection>
     return Text(
       text,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
     );
   }
 
@@ -271,12 +269,7 @@ class _ProviderSectionState extends State<ProviderSection>
         hintText: '選擇模型',
       ),
       items: selectedProvider.models
-          .map(
-            (m) => DropdownMenuItem(
-              value: m.id,
-              child: Text(m.name),
-            ),
-          )
+          .map((m) => DropdownMenuItem(value: m.id, child: Text(m.name)))
           .toList(),
       onChanged: (v) {
         if (v != null) widget.onModelSelected(v);
@@ -298,13 +291,15 @@ class _ProviderSectionState extends State<ProviderSection>
               fillColor: colorScheme.surface.withAlpha(200),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: colorScheme.onSurface.withAlpha(50)),
+                borderSide: BorderSide(
+                  color: colorScheme.onSurface.withAlpha(50),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: colorScheme.onSurface.withAlpha(50)),
+                borderSide: BorderSide(
+                  color: colorScheme.onSurface.withAlpha(50),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),

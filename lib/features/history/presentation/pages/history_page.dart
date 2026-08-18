@@ -26,13 +26,19 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: historyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         error: (e, _) => Center(child: Text('載入失敗：$e')),
         data: (records) => Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 16, top: 30),
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: 16,
+                  top: 30,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -75,15 +81,15 @@ class _PageHeader extends StatelessWidget {
               Text(
                 '歷史記錄',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 '查看所有轉寫紀錄與 AI 處理結果',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                    ),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                ),
               ),
             ],
           ),
@@ -285,7 +291,8 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
     final playingId = ref.watch(playingRecordIdProvider);
     final isPlaying = playingId == record.id;
     final cs = Theme.of(context).colorScheme;
-    final hasAudio = record.audioPath != null && File(record.audioPath!).existsSync();
+    final hasAudio =
+        record.audioPath != null && File(record.audioPath!).existsSync();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -303,8 +310,8 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
                   Text(
                     _formatDateTime(record.createdAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.onSurface.withOpacity(0.45),
-                        ),
+                      color: cs.onSurface.withOpacity(0.45),
+                    ),
                   ),
                   const SizedBox(height: 5),
                   Text(
@@ -312,7 +319,11 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
                     record.text,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, height: 1.5, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   if (record.inputTokens != null) ...[
                     const SizedBox(height: 5),
@@ -329,28 +340,37 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
             children: [
               if (hasAudio)
                 _ActionIcon(
-                  icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                  icon: isPlaying
+                      ? Icons.stop_rounded
+                      : Icons.play_arrow_rounded,
                   tooltip: isPlaying ? '停止' : '播放',
                   color: isPlaying ? cs.primary : null,
-                  onTap: () => ref.read(historyControllerProvider.notifier).togglePlay(record),
+                  onTap: () => ref
+                      .read(historyControllerProvider.notifier)
+                      .togglePlay(record),
                 ),
               _ActionIcon(
                 icon: Icons.copy_outlined,
                 tooltip: '複製文字',
-                onTap: () => ref.read(historyControllerProvider.notifier).copyText(record.text),
+                onTap: () => ref
+                    .read(historyControllerProvider.notifier)
+                    .copyText(record.text),
               ),
               if (hasAudio)
                 _ActionIcon(
                   icon: Icons.folder_open_outlined,
                   tooltip: Platform.isMacOS ? '在 Finder 中顯示' : '在檔案總管中顯示',
-                  onTap: () =>
-                      ref.read(historyControllerProvider.notifier).revealInFinder(record.audioPath!),
+                  onTap: () => ref
+                      .read(historyControllerProvider.notifier)
+                      .revealInFinder(record.audioPath!),
                 ),
               _ActionIcon(
                 icon: Icons.delete_outline,
                 tooltip: '刪除',
                 color: Colors.red.withOpacity(0.7),
-                onTap: () => ref.read(historyControllerProvider.notifier).deleteRecord(record.id),
+                onTap: () => ref
+                    .read(historyControllerProvider.notifier)
+                    .deleteRecord(record.id),
               ),
             ],
           ),
@@ -379,10 +399,21 @@ class _TokenInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final providerName = kProviderNames[record.provider] ?? record.provider;
+    final channelName = record.channel == null
+        ? null
+        : (kChannelNames[record.channel!] ?? record.channel);
+    final credentialName = record.credentialMethod == null
+        ? null
+        : (kCredentialMethodNames[record.credentialMethod!] ??
+              record.credentialMethod);
     final modelName = kModelNames[record.model] ?? record.model;
-    final costStr = record.costUsd != null ? formatCostUsd(record.costUsd!) : '';
+    final costStr = record.costUsd != null
+        ? formatCostUsd(record.costUsd!)
+        : '';
     final parts = [
       providerName,
+      if (channelName != null) channelName,
+      if (credentialName != null) credentialName,
       modelName,
       'in: ${record.inputTokens} / out: ${record.outputTokens}',
       if (costStr.isNotEmpty) costStr,
@@ -391,8 +422,8 @@ class _TokenInfoRow extends StatelessWidget {
     return Text(
       parts.join(' · '),
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-          ),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+      ),
     );
   }
 }
@@ -422,7 +453,9 @@ class _ActionIcon extends StatelessWidget {
           child: Icon(
             icon,
             size: 17,
-            color: color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color:
+                color ??
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           ),
         ),
       ),
@@ -454,15 +487,19 @@ class _EmptyState extends StatelessWidget {
             Text(
               '尚無轉寫記錄',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.35),
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               '完成一次語音辨識後，記錄將會顯示在這裡',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.25),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.25),
+              ),
             ),
           ],
         ),
@@ -564,9 +601,9 @@ class _StatCell extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                letterSpacing: 0.3,
-              ),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            letterSpacing: 0.3,
+          ),
         ),
         const SizedBox(height: 4),
         Text(

@@ -4,7 +4,7 @@ class AppTheme {
   AppTheme._();
 
   static const primaryOrange = Color(0xFFFF7A00);
-  
+
   // Light Colors
   static const _lightBackground = Color(0xFFFFFFFF);
   static const _lightSurface = Color(0xFFF8F9FA);
@@ -20,7 +20,7 @@ class AppTheme {
 
   static ThemeData _themeData(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    
+
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
@@ -58,7 +58,9 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: primaryOrange,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

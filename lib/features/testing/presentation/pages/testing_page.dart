@@ -67,7 +67,9 @@ class _TestingPageState extends ConsumerState<TestingPage> {
             const SizedBox(height: 8),
             Text(
               '直接在這裡測試錄音功能，錄音結束後會儲存 m4a 至桌面',
-              style: tt.bodyMedium?.copyWith(color: cs.onSurface.withAlpha(150)),
+              style: tt.bodyMedium?.copyWith(
+                color: cs.onSurface.withAlpha(150),
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -107,8 +109,11 @@ class _TestingPageState extends ConsumerState<TestingPage> {
             _SectionCard(
               child: Row(
                 children: [
-                  Icon(Icons.picture_in_picture_alt,
-                      color: cs.primary, size: 20),
+                  Icon(
+                    Icons.picture_in_picture_alt,
+                    color: cs.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -163,14 +168,18 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.check_circle,
-                            color: Colors.greenAccent, size: 16),
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.greenAccent,
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '已儲存：${state.result}',
-                            style: tt.bodySmall
-                                ?.copyWith(color: Colors.greenAccent),
+                            style: tt.bodySmall?.copyWith(
+                              color: Colors.greenAccent,
+                            ),
                           ),
                         ),
                       ],
@@ -181,14 +190,12 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.error_outline,
-                            color: cs.error, size: 16),
+                        Icon(Icons.error_outline, color: cs.error, size: 16),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             state.errorMessage!,
-                            style:
-                                tt.bodySmall?.copyWith(color: cs.error),
+                            style: tt.bodySmall?.copyWith(color: cs.error),
                           ),
                         ),
                       ],
@@ -209,7 +216,9 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                 ),
                 const SizedBox(width: 12),
                 FilledButton.icon(
-                  onPressed: isRecording ? () => notifier.toggleRecording() : null,
+                  onPressed: isRecording
+                      ? () => notifier.toggleRecording()
+                      : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: cs.error,
                     foregroundColor: cs.onError,
@@ -234,8 +243,11 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.play_circle_filled,
-                          color: cs.primary, size: 20),
+                      Icon(
+                        Icons.play_circle_filled,
+                        color: cs.primary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Text('完整流程測試', style: tt.labelLarge),
                     ],
@@ -243,7 +255,9 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                   const SizedBox(height: 12),
                   Text(
                     '點擊下方按鈕開始完整錄音流程。系統會自動顯示 Overlay 並在結束後將成品儲存至桌面。',
-                    style: tt.bodySmall?.copyWith(color: cs.onSurface.withAlpha(150)),
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurface.withAlpha(150),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -253,7 +267,9 @@ class _TestingPageState extends ConsumerState<TestingPage> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: isRecording ? cs.error : cs.primary,
-                        foregroundColor: isRecording ? cs.onError : cs.onPrimary,
+                        foregroundColor: isRecording
+                            ? cs.onError
+                            : cs.onPrimary,
                       ),
                       icon: Icon(isRecording ? Icons.stop : Icons.mic),
                       label: Text(isRecording ? '停止測試' : '完整測試'),
@@ -269,26 +285,28 @@ class _TestingPageState extends ConsumerState<TestingPage> {
   }
 
   String _statusLabel(ZeroTypeStatus status) => switch (status) {
-        ZeroTypeStatus.idle => '待機中',
-        ZeroTypeStatus.recording => '錄音中…',
-        ZeroTypeStatus.cancelling => '取消中…',
-        ZeroTypeStatus.saving => '擷取中…',
-        ZeroTypeStatus.transcribing => '處理中…',
-        ZeroTypeStatus.done => '完成',
-        ZeroTypeStatus.error => '錯誤',
-      };
+    ZeroTypeStatus.idle => '待機中',
+    ZeroTypeStatus.recording => '錄音中…',
+    ZeroTypeStatus.cancelling => '取消中…',
+    ZeroTypeStatus.saving => '擷取中…',
+    ZeroTypeStatus.transcribing => '處理中…',
+    ZeroTypeStatus.done => '完成',
+    ZeroTypeStatus.error => '錯誤',
+  };
 
   Color _statusColor(ZeroTypeStatus status) => switch (status) {
-        ZeroTypeStatus.idle =>
-          Theme.of(context).colorScheme.onSurface.withAlpha(100),
-        ZeroTypeStatus.recording => const Color(0xFF6C63FF),
-        ZeroTypeStatus.cancelling =>
-          Theme.of(context).colorScheme.onSurface.withAlpha(100),
-        ZeroTypeStatus.saving => const Color(0xFFFFAA00),
-        ZeroTypeStatus.transcribing => const Color(0xFF63B3FF),
-        ZeroTypeStatus.done => Colors.greenAccent,
-        ZeroTypeStatus.error => Theme.of(context).colorScheme.error,
-      };
+    ZeroTypeStatus.idle => Theme.of(
+      context,
+    ).colorScheme.onSurface.withAlpha(100),
+    ZeroTypeStatus.recording => const Color(0xFF6C63FF),
+    ZeroTypeStatus.cancelling => Theme.of(
+      context,
+    ).colorScheme.onSurface.withAlpha(100),
+    ZeroTypeStatus.saving => const Color(0xFFFFAA00),
+    ZeroTypeStatus.transcribing => const Color(0xFF63B3FF),
+    ZeroTypeStatus.done => Colors.greenAccent,
+    ZeroTypeStatus.error => Theme.of(context).colorScheme.error,
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -320,10 +338,10 @@ class _StatusDot extends StatelessWidget {
     final color = status == ZeroTypeStatus.recording
         ? const Color(0xFF6C63FF)
         : status == ZeroTypeStatus.done
-            ? Colors.greenAccent
-            : status == ZeroTypeStatus.error
-                ? Theme.of(context).colorScheme.error
-                : Theme.of(context).colorScheme.onSurface.withAlpha(80);
+        ? Colors.greenAccent
+        : status == ZeroTypeStatus.error
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.onSurface.withAlpha(80);
 
     return Container(
       width: 10,
@@ -345,8 +363,8 @@ class _AmplitudeBar extends StatelessWidget {
         Text(
           '音量',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
-              ),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+          ),
         ),
         const SizedBox(height: 6),
         ClipRRect(
@@ -354,8 +372,9 @@ class _AmplitudeBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: amplitude.clamp(0.0, 1.0),
             minHeight: 8,
-            backgroundColor:
-                Theme.of(context).colorScheme.onSurface.withAlpha(30),
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha(30),
             valueColor: const AlwaysStoppedAnimation(Color(0xFF6C63FF)),
           ),
         ),

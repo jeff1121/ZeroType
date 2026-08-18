@@ -73,7 +73,11 @@ class _PromptEditorState extends State<PromptEditor> {
                     color: colorScheme.primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(widget.icon, color: colorScheme.primary, size: 20),
+                  child: Icon(
+                    widget.icon,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -82,16 +86,15 @@ class _PromptEditorState extends State<PromptEditor> {
                     children: [
                       Text(
                         widget.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         widget.subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurface.withAlpha(120),
-                            ),
+                          color: colorScheme.onSurface.withAlpha(120),
+                        ),
                       ),
                     ],
                   ),
@@ -154,9 +157,9 @@ class _PromptEditorState extends State<PromptEditor> {
                           ),
                           contentPadding: const EdgeInsets.all(16),
                         ),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              height: 1.6,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(height: 1.6),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -165,7 +168,9 @@ class _PromptEditorState extends State<PromptEditor> {
                       child: FilledButton(
                         onPressed: _isDirty
                             ? () async {
-                                final newVal = await widget.onSave(_controller.text);
+                                final newVal = await widget.onSave(
+                                  _controller.text,
+                                );
                                 setState(() {
                                   _isDirty = false;
                                   _controller.text = newVal;
