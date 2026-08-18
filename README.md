@@ -66,18 +66,18 @@
 
 ### 方法一：直接下載（推薦）
 
-1. 前往 [Releases](https://github.com/your-username/zerotype/releases) 頁面下載最新的 `.dmg`
+1. 前往 [Releases](https://github.com/jeff1121/ZeroType/releases) 頁面下載最新的 `.dmg`
 2. 開啟 `.dmg` 並將 **ZeroType.app** 拖入 Applications 資料夾
 3. 首次執行時，依照提示授予以下權限：
    - **麥克風** — 語音輸入所需
    - **輔助使用（Accessibility）** — 模擬鍵盤貼上所需
-4. 在 App 內的「模型設定」填入你的 API Key，即可開始使用
+4. 在 App 內的「模型設定」選擇 Provider、通道與憑證，即可開始使用
 
 ### 方法二：從原始碼 Build（進階）
 
 ```bash
-git clone https://github.com/your-username/zerotype.git
-cd zerotype
+git clone https://github.com/jeff1121/ZeroType.git
+cd ZeroType
 flutter pub get
 flutter run -d macos
 ```
@@ -86,14 +86,29 @@ flutter run -d macos
 
 ## 🌍 語言支援 & 貢獻 (Localization & Contribution)
 
-- **地區限制**：目前此 App 主要針對 **台灣使用情境** 設計，輸出內容以 **繁體中文** 與 **英文** 為主。未來是否有增加其他語言支援？若「有緣」的話之後再行考慮。
-- **回報問題與協助**：如果你在使用上發現任何問題，或是單純想提供改進建議，歡迎直接發 **Issue** 或發 **Pull Request** 給我。只要我有看到訊息，第一時間就會來幫大家處理與解決。
+- **地區限制**：目前此 App 主要針對 **台灣使用情境** 設計，輸出內容以 **繁體中文** 與 **英文** 為主。
+- **回報問題與協助**：如果你在使用上發現任何問題，或是單純想提供改進建議，歡迎直接發 **Issue** 或發 **Pull Request** 給我。
 
 ---
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.0.2] - 當前版本
+### [v1.1.0] - 當前版本
+- **全新 App 麥克風視覺圖示** 🎙️
+  - 替換高解析度麥克風 Icon，並生成 macOS (.icns / .dmg) 與 Windows (.ico) 原生圖示。
+- **Gemini 官方 / Proxy 雙通道與多元憑證架構** 🌐
+  - **官方通道**：開箱即用，支援直連 Google AI Studio 官方公開 API 與 Google Cloud Code / Antigravity 原生端點。
+  - **Proxy 通道**：支援自訂根位址（例如本地 `CLIProxyAPI` 網關），方便轉發任意相容 LLM 提供商。
+  - 兩通道設定與模型偏好各自獨立保存，切換時互不干擾。
+- **Antigravity 原生直連轉寫** ⚡
+  - 自動引用本機現有 Antigravity 憑證與 Project ID。
+  - 過期時自動以 Antigravity OAuth Client 續期寫回本機，並提供 10 款專用模型（如 `gemini-3.5-flash-extra-low`、`gemini-3.7-flash-high`）。
+- **即時官方模型目錄查詢** 🔄
+  - 官方通道自動向 Google / OpenAI API 查詢最新可用轉寫模型。
+- **跨平台 GitHub Actions CI** 🚀
+  - 加入 macOS 與 Windows 自動化 Release 建置工作流 (.github/workflows/release.yml)。
+
+### [v1.0.2]
 - **新增歷史紀錄頁** 🎨
   - 提供歷史產生逐字稿的紀錄語音檔，並可提供檢視。
   - 新增總轉寫次數與總花費（USD）的持久化累計統計。
