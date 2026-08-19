@@ -64,14 +64,31 @@
 
 ## 🚀 快速開始
 
-### 方法一：直接下載（推薦）
+### 方法一：直接下載 macOS ad-hoc 版本
 
-1. 前往 [Releases](https://github.com/jeff1121/ZeroType/releases) 頁面下載最新的 `.dmg`
-2. 開啟 `.dmg` 並將 **ZeroType.app** 拖入 Applications 資料夾
-3. 首次執行時，依照提示授予以下權限：
+> 目前 macOS 安裝檔使用有效的 ad-hoc 簽章，但尚未加入 Apple Developer Program，因此沒有 Developer ID notarization。從網路下載後，macOS Gatekeeper 會加上 quarantine，第一次開啟可能顯示「App 已損毀」或「無法驗證開發者」。
+
+1. 前往 [Releases](https://github.com/jeff1121/ZeroType/releases) 頁面下載最新的 `.dmg`。
+2. 開啟 `.dmg`，將 **Zero Type.app** 拖入 `/Applications`。
+3. 開啟 Terminal，移除下載檔案的 quarantine 屬性：
+
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Zero Type.app"
+   open "/Applications/Zero Type.app"
+   ```
+
+4. 首次執行時，依照提示授予以下權限：
    - **麥克風** — 語音輸入所需
    - **輔助使用（Accessibility）** — 模擬鍵盤貼上所需
-4. 在 App 內的「模型設定」選擇 Provider、通道與憑證，即可開始使用
+5. 在 App 內的「模型設定」選擇 Provider、通道與憑證，即可開始使用。
+
+Release 頁面同時提供 `SHA256SUMS.txt`，可用以下指令核對下載檔完整性：
+
+```bash
+shasum -a 256 -c SHA256SUMS.txt
+```
+
+詳細說明請參考 [`Docs/macos-installation.md`](Docs/macos-installation.md)。
 
 ### 方法二：從原始碼 Build（進階）
 
@@ -93,7 +110,15 @@ flutter run -d macos
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.1.0] - 當前版本
+### [v1.1.1] - 當前版本
+- **修復 macOS 安裝檔簽章封印** 🔐
+  - 改為乾淨建置後直接打包，不再修改已簽章的 `.app` 內容。
+  - 發布前與 DMG 打包後均執行 `codesign --verify --deep --strict`，避免再次發布資源遭修改的損毀 App。
+  - 加入 ad-hoc 版本的 Gatekeeper quarantine 移除步驟與 SHA-256 完整性驗證說明。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.1.1+3`。
+
+### [v1.1.0]
 - **全新 App 麥克風視覺圖示** 🎙️
   - 替換高解析度麥克風 Icon，並生成 macOS (.icns / .dmg) 與 Windows (.ico) 原生圖示。
 - **Gemini 官方 / Proxy 雙通道與多元憑證架構** 🌐

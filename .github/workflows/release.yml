@@ -29,17 +29,24 @@ jobs:
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Package Windows Release (Zip)
+      - name: 打包 Windows Release
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath release\ZeroType-Windows-x64.zip
+          (Get-FileHash release\ZeroType-Windows-x64.zip -Algorithm SHA256).Hash.ToLower() + "  ZeroType-Windows-x64.zip" | Out-File -Encoding ascii release\SHA256SUMS-Windows.txt
 
-      - name: Upload Windows Artifact
+      - name: 上傳 Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ZeroType-Windows-x64
-          path: release\ZeroType-Windows-x64.zip
+          path: release/*
+
+      - name: 上傳 Windows 檔案至 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
 
   build-macos:
     runs-on: macos-latest
@@ -57,18 +64,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build macOS Release
+      - name: 建置 macOS Release
         run: flutter build macos --release
 
-      - name: Package macOS Release (DMG & Zip)
+      - name: 驗證建置後 App 簽章封印
+        run: |
+          chmod +x scripts/verify_macos_release.sh
+          scripts/verify_macos_release.sh "build/macos/Build/Products/Release/Zero Type.app"
+
+      - name: 打包 macOS Release
         run: |
           mkdir -p release
           hdiutil create -volname "ZeroType" -srcfolder "build/macos/Build/Products/Release/Zero Type.app" -ov -format UDZO "release/ZeroType-macOS.dmg"
-          cd build/macos/Build/Products/Release
-          zip -r -y -q "../../../../../release/ZeroType-macOS-arm64.zip" "Zero Type.app"
+          ditto -c -k --sequesterRsrc --keepParent "build/macos/Build/Products/Release/Zero Type.app" "release/ZeroType-macOS-arm64.zip"
+          shasum -a 256 release/ZeroType-macOS.dmg release/ZeroType-macOS-arm64.zip > release/SHA256SUMS.txt
 
-      - name: Upload macOS Artifacts
+      - name: 驗證 DMG 內 App 簽章封印
+        run: scripts/verify_macos_release.sh "release/ZeroType-macOS.dmg"
+
+      - name: 上傳 macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ZeroType-macOS
           path: release/*
+
+      - name: 上傳 macOS 檔案至 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
