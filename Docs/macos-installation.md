@@ -2,7 +2,7 @@
 
 ## 目前的簽章狀態
 
-ZeroType v1.1.1 使用完整且可驗證的 ad-hoc code signature，但尚未加入 Apple Developer Program，因此目前沒有 Developer ID Application 簽章與 Apple notarization。
+ZeroType 目前使用完整且可驗證的 ad-hoc code signature，但尚未加入 Apple Developer Program，因此目前沒有 Developer ID Application 簽章與 Apple notarization。
 
 這不代表應用程式內容損毀。從 GitHub 下載 DMG 時，瀏覽器會為檔案加上 `com.apple.quarantine` 屬性；macOS Gatekeeper 對未 notarize 的 App 進行檢查時，可能顯示「App 已損毀」或「無法驗證開發者」。
 

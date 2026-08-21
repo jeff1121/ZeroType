@@ -1,13 +1,14 @@
 ## ✨ 本次更新
 
-### 🔑 Antigravity OAuth 一鍵登入落地憑證
-- 新增「Antigravity OAuth」憑證方式：直接用 **Google 帳號**在 App 內完成授權，**無需**先安裝 Antigravity 或 CLI。
-- 參考開源專案 CLIProxyAPI 做法，使用 Antigravity 專用 OAuth client 與 scope（含 `cclog`、`experimentsandconfigs`），透過本機 callback 完成授權。
-- 自動以 `loadCodeAssist`（`ideType=ANTIGRAVITY`，必要時 `onboardUser` 輪詢）取得 Project ID，並落地成 `~/.cli-proxy-api/antigravity-<email>.json`，供轉寫直接引用與自動續期。
+### 🟦 Azure OpenAI Whisper 語音辨識
+- 新增 **Azure** 作為第三個語音辨識 Provider；選 Azure 後通道只顯示「官方」。
+- 必填 **Service Endpoint**、**API Key（Access Token）**、**API Version**（預設 `2024-10-21`）。
+- 「更新模型目錄」會列出 Azure 部署（不過濾）；查不到時可手動輸入部署名稱。
+- 轉寫走 `POST {endpoint}/openai/deployments/{deployment}/audio/transcriptions`，認證使用 header `api-key`。
+- Endpoint 會正規化為 origin，避免誤貼完整 API 路徑導致 404。
 
-### 🧹 移除 Gemini OAuth 通道
-- 該通道目前無法正常使用，暫時移除按鈕與相關程式，讓憑證設定畫面更乾淨。
-- 憑證方式現為 **API Key** 與 **Antigravity OAuth** 兩種。
+### 🏷️ 側邊欄顯示版本
+- 左側導航欄最底部以淡色顯示目前版號（例如 `v1.3.0`），懸停可看 build number。
 
 ---
 

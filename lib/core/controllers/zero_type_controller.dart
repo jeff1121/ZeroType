@@ -199,7 +199,7 @@ class ZeroTypeController extends _$ZeroTypeController {
     if (!config.isReady ||
         config.providerId == null ||
         config.modelId == null ||
-        config.activeCredentialMethod == null) {
+        (!config.isAzure && config.activeCredentialMethod == null)) {
       throw Exception('請先完成語音辨識模型設定');
     }
 
@@ -221,17 +221,38 @@ class ZeroTypeController extends _$ZeroTypeController {
       prompt: finalPrompt,
       channel: config.channel,
       proxyRoot: config.proxyRoot,
+      azureEndpoint: auth.azureEndpoint,
+      azureApiVersion: auth.azureApiVersion,
     );
   }
 
-  Future<({String? apiKey, String? accessToken, String? antigravityProjectId})>
+  Future<
+    ({
+      String? apiKey,
+      String? accessToken,
+      String? antigravityProjectId,
+      String? azureEndpoint,
+      String? azureApiVersion,
+    })
+  >
   _resolveAuth(SpeechConnectionState config) async {
+    if (config.isAzure) {
+      return (
+        apiKey: config.activeApiKey,
+        accessToken: null,
+        antigravityProjectId: null,
+        azureEndpoint: config.azureEndpoint,
+        azureApiVersion: config.azureApiVersion,
+      );
+    }
     switch (config.activeCredentialMethod) {
       case CredentialMethod.apiKey:
         return (
           apiKey: config.activeApiKey,
           accessToken: null,
           antigravityProjectId: null,
+          azureEndpoint: null,
+          azureApiVersion: null,
         );
       case CredentialMethod.antigravityOauth:
         final data = await getIt<AntigravityAuthSource>().getAuthData();
@@ -242,6 +263,8 @@ class ZeroTypeController extends _$ZeroTypeController {
           apiKey: null,
           accessToken: data.accessToken,
           antigravityProjectId: data.projectId,
+          azureEndpoint: null,
+          azureApiVersion: null,
         );
       case null:
         throw Exception('請先完成語音辨識模型設定');

@@ -17,6 +17,7 @@ const Map<String, ({double inputPerM, double outputPerM})> kModelPricing = {
 const Map<String, String> kProviderNames = {
   'openai': 'OpenAI',
   'gemini': 'Gemini',
+  'azure': 'Azure',
 };
 
 const Map<String, String> kModelNames = {

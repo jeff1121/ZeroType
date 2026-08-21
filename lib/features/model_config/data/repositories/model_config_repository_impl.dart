@@ -45,6 +45,10 @@ class ModelConfigRepositoryImpl implements ModelConfigRepository {
 
   @override
   Future<SpeechChannel> getSpeechChannel(String providerId) async {
+    if (providerId == SpeechConnectionState.azureProviderId) {
+      return SpeechChannel.official;
+    }
+
     final stored = _prefs.getString(_channelKey(providerId));
     if (stored != null) return SpeechChannelX.fromId(stored);
 
@@ -140,6 +144,36 @@ class ModelConfigRepositoryImpl implements ModelConfigRepository {
     await _prefs.setString(key, method.id);
   }
 
+  @override
+  Future<String?> getAzureEndpoint(String providerId) async {
+    final stored = _prefs.getString(_azureEndpointKey(providerId));
+    if (stored == null) return null;
+    final trimmed = stored.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  @override
+  Future<void> saveAzureEndpoint(String providerId, String endpoint) async {
+    final normalized = normalizeAzureEndpoint(endpoint);
+    await _prefs.setString(_azureEndpointKey(providerId), normalized);
+  }
+
+  @override
+  Future<String?> getAzureApiVersion(String providerId) async {
+    final stored = _prefs.getString(_azureApiVersionKey(providerId));
+    if (stored == null || stored.trim().isEmpty) {
+      return AppConstants.defaultAzureApiVersion;
+    }
+    return stored.trim();
+  }
+
+  @override
+  Future<void> saveAzureApiVersion(
+    String providerId,
+    String apiVersion,
+  ) async =>
+      _prefs.setString(_azureApiVersionKey(providerId), apiVersion.trim());
+
   String _channelKey(String providerId) =>
       '${AppConstants.selectedSpeechChannelKey}_$providerId';
 
@@ -154,4 +188,10 @@ class ModelConfigRepositoryImpl implements ModelConfigRepository {
 
   String _credentialMethodKey(String providerId) =>
       '${AppConstants.officialCredentialMethodKey}_$providerId';
+
+  String _azureEndpointKey(String providerId) =>
+      '${AppConstants.azureEndpointKey}_$providerId';
+
+  String _azureApiVersionKey(String providerId) =>
+      '${AppConstants.azureApiVersionKey}_$providerId';
 }

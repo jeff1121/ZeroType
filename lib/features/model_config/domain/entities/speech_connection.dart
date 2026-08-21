@@ -13,7 +13,11 @@ class SpeechConnectionState {
     required this.proxyRoot,
     required this.officialCredentialMethod,
     required this.antigravityAvailable,
+    this.azureEndpoint,
+    this.azureApiVersion,
   });
+
+  static const String azureProviderId = 'azure';
 
   final String? providerId;
   final SpeechChannel channel;
@@ -24,6 +28,20 @@ class SpeechConnectionState {
   final String? proxyRoot;
   final CredentialMethod? officialCredentialMethod;
   final bool antigravityAvailable;
+  final String? azureEndpoint;
+  final String? azureApiVersion;
+
+  bool get isAzure => providerId == azureProviderId;
+
+  /// 各 Provider 允許的通道。Azure 僅官方，其餘為官方 + Proxy。
+  static List<SpeechChannel> allowedChannelsFor(String? providerId) {
+    if (providerId == azureProviderId) {
+      return const [SpeechChannel.official];
+    }
+    return SpeechChannel.values;
+  }
+
+  List<SpeechChannel> get allowedChannels => allowedChannelsFor(providerId);
 
   String? get modelId =>
       channel == SpeechChannel.official ? officialModelId : proxyModelId;
@@ -38,6 +56,14 @@ class SpeechConnectionState {
   bool get isReady {
     if (providerId == null || providerId!.isEmpty) return false;
     if (modelId == null || modelId!.isEmpty) return false;
+    if (isAzure) {
+      return azureEndpoint != null &&
+          azureEndpoint!.isNotEmpty &&
+          azureApiVersion != null &&
+          azureApiVersion!.isNotEmpty &&
+          activeApiKey != null &&
+          activeApiKey!.isNotEmpty;
+    }
     if (channel == SpeechChannel.proxy &&
         (proxyRoot == null || proxyRoot!.isEmpty)) {
       return false;
@@ -65,6 +91,16 @@ extension SpeechChannelX on SpeechChannel {
   static SpeechChannel fromId(String? id) => id == SpeechChannel.proxy.id
       ? SpeechChannel.proxy
       : SpeechChannel.official;
+}
+
+/// 只保留 Azure origin。使用者若貼上含 `/openai/...` 的完整 URL，避免路徑重複導致 404。
+String normalizeAzureEndpoint(String? raw) {
+  var value = (raw ?? '').trim();
+  if (value.isEmpty) return '';
+  value = value.replaceFirst(RegExp(r'/+$'), '');
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
+  return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 }
 
 extension CredentialMethodX on CredentialMethod {
