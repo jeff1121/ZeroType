@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/router/app_router.dart';
 import 'package:zero_type/features/history/presentation/controllers/history_controller.dart';
+import 'package:zero_type/shared/widgets/app_version_label.dart';
 import 'package:zero_type/shared/widgets/recording_overlay.dart';
 
 @RoutePage()
@@ -137,49 +138,60 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
               const Divider(height: 1, thickness: 1),
               Expanded(
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    NavigationRail(
-                      backgroundColor: Theme.of(context).colorScheme.surface,
-                      selectedIndex: tabsRouter.activeIndex,
-                      onDestinationSelected: (index) {
-                        if (index == 3) {
-                          ref.invalidate(historyControllerProvider);
-                          ref.invalidate(historyStatsProvider);
-                        }
-                        tabsRouter.setActiveIndex(index);
-                      },
-                      labelType: NavigationRailLabelType.all,
-                      leading: const SizedBox(height: 16),
-                      selectedIconTheme: IconThemeData(
-                        color: Theme.of(context).colorScheme.primary,
+                    ColoredBox(
+                      color: Theme.of(context).colorScheme.surface,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: NavigationRail(
+                              backgroundColor: Colors.transparent,
+                              selectedIndex: tabsRouter.activeIndex,
+                              onDestinationSelected: (index) {
+                                if (index == 3) {
+                                  ref.invalidate(historyControllerProvider);
+                                  ref.invalidate(historyStatsProvider);
+                                }
+                                tabsRouter.setActiveIndex(index);
+                              },
+                              labelType: NavigationRailLabelType.all,
+                              leading: const SizedBox(height: 16),
+                              selectedIconTheme: IconThemeData(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              destinations: const [
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.tune_outlined),
+                                  selectedIcon: Icon(Icons.tune),
+                                  label: Text('模型'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.edit_note_outlined),
+                                  selectedIcon: Icon(Icons.edit_note),
+                                  label: Text('提示詞'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.book_outlined),
+                                  selectedIcon: Icon(Icons.book),
+                                  label: Text('字典檔'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.history_outlined),
+                                  selectedIcon: Icon(Icons.history),
+                                  label: Text('歷史'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.settings_outlined),
+                                  selectedIcon: Icon(Icons.settings),
+                                  label: Text('設定'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const AppVersionLabel(),
+                        ],
                       ),
-                      destinations: const [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.tune_outlined),
-                          selectedIcon: Icon(Icons.tune),
-                          label: Text('模型'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.edit_note_outlined),
-                          selectedIcon: Icon(Icons.edit_note),
-                          label: Text('提示詞'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.book_outlined),
-                          selectedIcon: Icon(Icons.book),
-                          label: Text('字典檔'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.history_outlined),
-                          selectedIcon: Icon(Icons.history),
-                          label: Text('歷史'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.settings_outlined),
-                          selectedIcon: Icon(Icons.settings),
-                          label: Text('設定'),
-                        ),
-                      ],
                     ),
                     const VerticalDivider(thickness: 1, width: 1),
                     Expanded(child: child),

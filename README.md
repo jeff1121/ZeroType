@@ -110,7 +110,17 @@ flutter run -d macos
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.2.0] - 當前版本
+### [v1.3.0] - 當前版本
+- **Azure OpenAI Whisper 語音辨識** 🟦
+  - 新增 Azure 作為第三個語音辨識 Provider（僅官方通道）。
+  - 必填 Service Endpoint、API Key、API Version；部署清單可 refresh，失敗時可手動輸入部署名稱。
+  - 轉寫使用 Azure OpenAI Whisper 部署與 `api-key` header。
+- **側邊欄顯示版本號碼** 🏷️
+  - 左側導航欄底部以淡色顯示目前版號。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.3.0+5`。
+
+### [v1.2.0]
 - **Antigravity OAuth 一鍵登入落地憑證** 🔑
   - 新增「Antigravity OAuth」憑證方式：直接用 Google 帳號在 App 內完成授權，無需先安裝 Antigravity 或 CLI。
   - 參考開源專案 CLIProxyAPI 做法，使用 Antigravity 專用 OAuth client 與 scope（含 `cclog`、`experimentsandconfigs`），透過本機 callback 完成授權。
