@@ -189,7 +189,7 @@ class SpeechRecognitionService {
     required String deployment,
     required String? apiVersion,
   }) {
-    final root = (endpoint ?? '').trim().replaceFirst(RegExp(r'/+$'), '');
+    final root = normalizeAzureEndpoint(endpoint);
     if (root.isEmpty) {
       throw Exception('尚未設定 Azure Service Endpoint');
     }

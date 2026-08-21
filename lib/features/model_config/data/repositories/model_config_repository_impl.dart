@@ -154,7 +154,7 @@ class ModelConfigRepositoryImpl implements ModelConfigRepository {
 
   @override
   Future<void> saveAzureEndpoint(String providerId, String endpoint) async {
-    final normalized = endpoint.trim().replaceFirst(RegExp(r'/+$'), '');
+    final normalized = normalizeAzureEndpoint(endpoint);
     await _prefs.setString(_azureEndpointKey(providerId), normalized);
   }
 

@@ -107,9 +107,28 @@ void main() {
         ),
         'https://my-res.openai.azure.com/openai/deployments?api-version=${AppConstants.azureDeploymentsApiVersion}',
       );
+      expect(
+        OfficialModelCatalogService.azureModelsUrl(
+          'https://my-res.openai.azure.com/openai/deployments/foo',
+        ),
+        'https://my-res.openai.azure.com/openai/models?api-version=${AppConstants.defaultAzureApiVersion}',
+      );
       expect(OfficialModelCatalogService.azureApiKeyHeaders('token'), {
         'api-key': 'token',
       });
+    });
+
+    test('endpoint 只保留 origin，避免貼上完整 API 路徑', () {
+      expect(
+        normalizeAzureEndpoint(
+          'https://my-res.openai.azure.com/openai/deployments/whisper/audio/transcriptions?api-version=2024-10-21',
+        ),
+        'https://my-res.openai.azure.com',
+      );
+      expect(
+        normalizeAzureEndpoint('https://my-res.openai.azure.com/'),
+        'https://my-res.openai.azure.com',
+      );
     });
   });
 

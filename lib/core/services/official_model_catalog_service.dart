@@ -110,36 +110,45 @@ class OfficialModelCatalogService {
   }
 
   /// 列出 Azure OpenAI 部署。失敗回傳空清單，不做 Whisper 過濾。
+  /// 舊 data-plane `/openai/deployments` 在不少資源已 404，接著改試 `/openai/models`。
   Future<List<AiModel>> _listAzure({String? apiKey, String? endpoint}) async {
     final root = normalizeAzureEndpoint(endpoint);
     if (root.isEmpty || apiKey == null || apiKey.isEmpty) {
       return const [];
     }
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        azureDeploymentsUrl(root),
-        options: Options(
-          sendTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-          headers: azureApiKeyHeaders(apiKey),
-        ),
-      );
-      return parseAzureDeployments(response.data);
-    } catch (e) {
-      print('[AzureCatalog] 部署清單查詢失敗：$e');
-      return const [];
+    final urls = [azureDeploymentsUrl(root), azureModelsUrl(root)];
+    for (final url in urls) {
+      try {
+        final response = await _dio.get<Map<String, dynamic>>(
+          url,
+          options: Options(
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+            headers: azureApiKeyHeaders(apiKey),
+          ),
+        );
+        final models = parseAzureDeployments(response.data);
+        print('[AzureCatalog] 成功 $url（${models.length}）');
+        return models;
+      } on DioException catch (e) {
+        print(
+          '[AzureCatalog] ${e.response?.statusCode} $url body=${e.response?.data}',
+        );
+      } catch (e) {
+        print('[AzureCatalog] 失敗 $url：$e');
+      }
     }
-  }
-
-  static String normalizeAzureEndpoint(String? raw) {
-    final trimmed = (raw ?? '').trim();
-    if (trimmed.isEmpty) return '';
-    return trimmed.replaceFirst(RegExp(r'/+$'), '');
+    return const [];
   }
 
   static String azureDeploymentsUrl(String endpoint) {
     final root = normalizeAzureEndpoint(endpoint);
     return '$root/openai/deployments?api-version=${AppConstants.azureDeploymentsApiVersion}';
+  }
+
+  static String azureModelsUrl(String endpoint) {
+    final root = normalizeAzureEndpoint(endpoint);
+    return '$root/openai/models?api-version=${AppConstants.defaultAzureApiVersion}';
   }
 
   static Map<String, String> azureApiKeyHeaders(String apiKey) => {

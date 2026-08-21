@@ -93,6 +93,16 @@ extension SpeechChannelX on SpeechChannel {
       : SpeechChannel.official;
 }
 
+/// 只保留 Azure origin。使用者若貼上含 `/openai/...` 的完整 URL，避免路徑重複導致 404。
+String normalizeAzureEndpoint(String? raw) {
+  var value = (raw ?? '').trim();
+  if (value.isEmpty) return '';
+  value = value.replaceFirst(RegExp(r'/+$'), '');
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
+  return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+}
+
 extension CredentialMethodX on CredentialMethod {
   String get id => switch (this) {
     CredentialMethod.apiKey => 'api_key',
