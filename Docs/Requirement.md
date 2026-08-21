@@ -49,3 +49,15 @@
    - 貼上完成後，自動隱藏/關閉螢幕中間下方的浮動圖示。
 7. **例外處理**：
    - 若過程中有 API 錯誤（如連線失敗、API Key 無效），浮動視窗需顯示紅色錯誤提示（例如 "辨識失敗，請檢查網路或 API Key"）約 3 秒後再消失。
+
+---
+
+# 現況同步註記（Reconciliation Note）
+
+> 以上為原始 PRD 願景，保留作歷史紀錄。以下為與目前原始碼的落差與後續規劃，實際實作以程式碼為準。
+
+- **無獨立「AI 精修」階段**：目前僅有語音辨識流程，未提供獨立的 Gemini 文字精修 Section（字典檔仍會併入語音辨識 Prompt）。
+- **憑證儲存**：API Key 與各項設定存於 `SharedPreferences`（非安全儲存），非原規劃的 `flutter_secure_storage`。
+- **雙通道與多元憑證**：語音辨識已擴充為「官方 / Proxy」雙通道；官方憑證方式含 **API Key** 與 **Antigravity OAuth**（Gemini OAuth 已於 v1.2.0 移除）。
+- **即時模型目錄**：官方通道有憑證時會向 Provider 官方 API 查詢可用模型，查不到時退回 `providers.json`。
+- **規劃中新功能**：新增 **Azure OpenAI Whisper** 作為第三個語音辨識 Provider（僅官方通道，使用者填 Endpoint / API Key / API Version）。詳見 `Docs/Tasks.md` 第九節，為目前唯一進行中的待實作功能。
