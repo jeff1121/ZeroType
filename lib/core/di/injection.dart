@@ -2,7 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/antigravity_auth_source.dart';
-import '../services/gemini_oauth_service.dart';
+import '../services/antigravity_oauth_service.dart';
 import '../services/official_model_catalog_service.dart';
 import '../services/proxy_model_catalog_service.dart';
 import '../services/sound_service.dart';
@@ -26,11 +26,11 @@ Future<void> configureDependencies() async {
     prefs: sharedPreferences,
   );
   getIt.registerSingleton<ModelConfigRepository>(modelConfigRepository);
-  getIt.registerSingleton<GeminiOauthService>(
-    GeminiOauthService(dio: dio, repository: modelConfigRepository),
-  );
   getIt.registerSingleton<AntigravityAuthSource>(
     AntigravityAuthSource(dio: dio),
+  );
+  getIt.registerSingleton<AntigravityOauthService>(
+    AntigravityOauthService(dio: dio),
   );
   getIt.registerSingleton<ProxyModelCatalogService>(
     ProxyModelCatalogService(dio: dio),

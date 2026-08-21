@@ -287,7 +287,6 @@ class _ModelPicker extends ConsumerWidget {
     final attemptedOfficial = switch (state.activeCredentialMethod) {
       CredentialMethod.apiKey =>
         (state.activeApiKey != null && state.activeApiKey!.isNotEmpty),
-      CredentialMethod.geminiOauth => state.geminiOauthConnected,
       CredentialMethod.antigravityOauth => state.antigravityAvailable,
       null => false,
     };
@@ -386,7 +385,6 @@ class _GeminiOfficialCredentials extends ConsumerWidget {
         _ChoiceRow(
           values: [
             (id: CredentialMethod.apiKey.id, label: 'API Key'),
-            (id: CredentialMethod.geminiOauth.id, label: 'Gemini OAuth'),
             (
               id: CredentialMethod.antigravityOauth.id,
               label: 'Antigravity OAuth',
@@ -411,18 +409,8 @@ class _GeminiOfficialCredentials extends ConsumerWidget {
                 .read(speechProviderControllerProvider.notifier)
                 .saveApiKey(val),
           )
-        else if (selected == CredentialMethod.geminiOauth)
-          _GeminiOauthActions(connected: state.geminiOauthConnected)
         else if (selected == CredentialMethod.antigravityOauth)
-          Text(
-            state.antigravityAvailable
-                ? '已找到本機 Antigravity / Gemini 登入，轉寫時會引用現況。'
-                : '找不到有效的本機登入。請先在 Antigravity 登入，或改選其他憑證。',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(160),
-              height: 1.5,
-            ),
-          )
+          _AntigravityOauthActions(available: state.antigravityAvailable)
         else
           Text(
             '請選擇一份使用中憑證',
@@ -435,25 +423,31 @@ class _GeminiOfficialCredentials extends ConsumerWidget {
   }
 }
 
-class _GeminiOauthActions extends ConsumerStatefulWidget {
-  const _GeminiOauthActions({required this.connected});
-  final bool connected;
+class _AntigravityOauthActions extends ConsumerStatefulWidget {
+  const _AntigravityOauthActions({required this.available});
+  final bool available;
 
   @override
-  ConsumerState<_GeminiOauthActions> createState() =>
-      _GeminiOauthActionsState();
+  ConsumerState<_AntigravityOauthActions> createState() =>
+      _AntigravityOauthActionsState();
 }
 
-class _GeminiOauthActionsState extends ConsumerState<_GeminiOauthActions> {
+class _AntigravityOauthActionsState
+    extends ConsumerState<_AntigravityOauthActions> {
   bool _busy = false;
 
-  Future<void> _run(Future<void> Function() action, String success) async {
+  Future<void> _login() async {
     setState(() => _busy = true);
     try {
-      await action();
+      await ref
+          .read(speechProviderControllerProvider.notifier)
+          .loginAntigravityOauth();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(success), duration: const Duration(seconds: 2)),
+        const SnackBar(
+          content: Text('Antigravity 憑證已取得並落地'),
+          duration: Duration(seconds: 2),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -472,39 +466,30 @@ class _GeminiOauthActionsState extends ConsumerState<_GeminiOauthActions> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.connected ? '已連線 ZeroType Gemini OAuth' : '尚未登入 Google 帳號',
-          style: TextStyle(color: cs.onSurface.withAlpha(160)),
+          widget.available
+              ? '已找到本機 Antigravity 憑證，轉寫時會直接引用。'
+              : '尚未取得 Antigravity 憑證，請用 Google 帳號登入以取得並落地憑證。',
+          style: TextStyle(color: cs.onSurface.withAlpha(160), height: 1.5),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             ElevatedButton(
-              onPressed: _busy
-                  ? null
-                  : () => _run(
-                      () => ref
-                          .read(speechProviderControllerProvider.notifier)
-                          .loginGeminiOauth(),
-                      'Gemini OAuth 已連線',
-                    ),
+              onPressed: _busy ? null : _login,
               style: ElevatedButton.styleFrom(
                 backgroundColor: cs.primary,
                 foregroundColor: cs.onPrimary,
               ),
-              child: Text(widget.connected ? '重新登入' : '用 Google 登入'),
+              child: Text(
+                widget.available ? '重新登入' : '用 Google 登入 Antigravity',
+              ),
             ),
-            if (widget.connected) ...[
+            if (_busy) ...[
               const SizedBox(width: 12),
-              TextButton(
-                onPressed: _busy
-                    ? null
-                    : () => _run(
-                        () => ref
-                            .read(speechProviderControllerProvider.notifier)
-                            .disconnectGeminiOauth(),
-                        '已中斷 Gemini OAuth',
-                      ),
-                child: const Text('中斷連線'),
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ],
           ],

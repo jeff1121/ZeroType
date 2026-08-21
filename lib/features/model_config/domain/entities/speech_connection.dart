@@ -1,6 +1,6 @@
 enum SpeechChannel { official, proxy }
 
-enum CredentialMethod { apiKey, geminiOauth, antigravityOauth }
+enum CredentialMethod { apiKey, antigravityOauth }
 
 class SpeechConnectionState {
   const SpeechConnectionState({
@@ -12,7 +12,6 @@ class SpeechConnectionState {
     required this.proxyApiKey,
     required this.proxyRoot,
     required this.officialCredentialMethod,
-    required this.geminiOauthConnected,
     required this.antigravityAvailable,
   });
 
@@ -24,7 +23,6 @@ class SpeechConnectionState {
   final String? proxyApiKey;
   final String? proxyRoot;
   final CredentialMethod? officialCredentialMethod;
-  final bool geminiOauthConnected;
   final bool antigravityAvailable;
 
   String? get modelId =>
@@ -47,7 +45,6 @@ class SpeechConnectionState {
     return switch (activeCredentialMethod) {
       CredentialMethod.apiKey =>
         activeApiKey != null && activeApiKey!.isNotEmpty,
-      CredentialMethod.geminiOauth => geminiOauthConnected,
       CredentialMethod.antigravityOauth => antigravityAvailable,
       null => false,
     };
@@ -73,13 +70,11 @@ extension SpeechChannelX on SpeechChannel {
 extension CredentialMethodX on CredentialMethod {
   String get id => switch (this) {
     CredentialMethod.apiKey => 'api_key',
-    CredentialMethod.geminiOauth => 'gemini_oauth',
     CredentialMethod.antigravityOauth => 'antigravity_oauth',
   };
 
   String get displayName => switch (this) {
     CredentialMethod.apiKey => 'API Key',
-    CredentialMethod.geminiOauth => 'Gemini OAuth',
     CredentialMethod.antigravityOauth => 'Antigravity OAuth',
   };
 

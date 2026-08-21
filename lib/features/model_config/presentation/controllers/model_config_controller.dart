@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/services/antigravity_auth_source.dart';
-import 'package:zero_type/core/services/gemini_oauth_service.dart';
+import 'package:zero_type/core/services/antigravity_oauth_service.dart';
 import 'package:zero_type/core/services/official_model_catalog_service.dart';
 import 'package:zero_type/core/services/proxy_model_catalog_service.dart';
 import 'package:zero_type/features/model_config/data/repositories/model_config_repository_impl.dart';
@@ -55,7 +55,6 @@ class SpeechProviderController extends _$SpeechProviderController {
       proxyApiKey: await _repo.getSpeechApiKey(id, SpeechChannel.proxy),
       proxyRoot: await _repo.getProxyRoot(id),
       officialCredentialMethod: await _repo.getOfficialCredentialMethod(id),
-      geminiOauthConnected: await getIt<GeminiOauthService>().isConnected,
       antigravityAvailable: await getIt<AntigravityAuthSource>().isAvailable,
     );
   }
@@ -111,24 +110,14 @@ class SpeechProviderController extends _$SpeechProviderController {
     ref.invalidateSelf();
   }
 
-  Future<void> loginGeminiOauth() async {
+  Future<void> loginAntigravityOauth() async {
     final state = await future;
     if (state.providerId == null) return;
-    await getIt<GeminiOauthService>().login();
+    await getIt<AntigravityOauthService>().login();
     await _repo.saveOfficialCredentialMethod(
       state.providerId!,
-      CredentialMethod.geminiOauth,
+      CredentialMethod.antigravityOauth,
     );
-    ref.invalidateSelf();
-  }
-
-  Future<void> disconnectGeminiOauth() async {
-    final state = await future;
-    await getIt<GeminiOauthService>().disconnect();
-    if (state.providerId != null &&
-        state.officialCredentialMethod == CredentialMethod.geminiOauth) {
-      await _repo.saveOfficialCredentialMethod(state.providerId!, null);
-    }
     ref.invalidateSelf();
   }
 }
@@ -186,13 +175,6 @@ Future<({String? apiKey, String? accessToken})?> _resolveCatalogAuth(
       final key = connection.activeApiKey;
       if (key == null || key.isEmpty) return null;
       return (apiKey: key, accessToken: null);
-    case CredentialMethod.geminiOauth:
-      try {
-        final token = await getIt<GeminiOauthService>().resolveAccessToken();
-        return (apiKey: null, accessToken: token);
-      } catch (_) {
-        return null;
-      }
     case CredentialMethod.antigravityOauth:
       final token = await getIt<AntigravityAuthSource>().readAccessToken();
       if (token == null) return null;

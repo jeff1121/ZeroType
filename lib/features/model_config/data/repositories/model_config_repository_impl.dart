@@ -140,48 +140,6 @@ class ModelConfigRepositoryImpl implements ModelConfigRepository {
     await _prefs.setString(key, method.id);
   }
 
-  @override
-  Future<GeminiOauthTokens?> getGeminiOauthTokens() async {
-    final access = _prefs.getString(AppConstants.geminiOauthAccessTokenKey);
-    final refresh = _prefs.getString(AppConstants.geminiOauthRefreshTokenKey);
-    final expiryMs = _prefs.getInt(AppConstants.geminiOauthExpiryKey);
-    if (access == null ||
-        access.isEmpty ||
-        refresh == null ||
-        refresh.isEmpty ||
-        expiryMs == null) {
-      return null;
-    }
-    return GeminiOauthTokens(
-      accessToken: access,
-      refreshToken: refresh,
-      expiry: DateTime.fromMillisecondsSinceEpoch(expiryMs),
-    );
-  }
-
-  @override
-  Future<void> saveGeminiOauthTokens(GeminiOauthTokens tokens) async {
-    await _prefs.setString(
-      AppConstants.geminiOauthAccessTokenKey,
-      tokens.accessToken,
-    );
-    await _prefs.setString(
-      AppConstants.geminiOauthRefreshTokenKey,
-      tokens.refreshToken,
-    );
-    await _prefs.setInt(
-      AppConstants.geminiOauthExpiryKey,
-      tokens.expiry.millisecondsSinceEpoch,
-    );
-  }
-
-  @override
-  Future<void> clearGeminiOauthTokens() async {
-    await _prefs.remove(AppConstants.geminiOauthAccessTokenKey);
-    await _prefs.remove(AppConstants.geminiOauthRefreshTokenKey);
-    await _prefs.remove(AppConstants.geminiOauthExpiryKey);
-  }
-
   String _channelKey(String providerId) =>
       '${AppConstants.selectedSpeechChannelKey}_$providerId';
 

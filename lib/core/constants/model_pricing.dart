@@ -39,7 +39,6 @@ const Map<String, String> kChannelNames = {'official': '官方', 'proxy': 'Proxy
 
 const Map<String, String> kCredentialMethodNames = {
   'api_key': 'API Key',
-  'gemini_oauth': 'Gemini OAuth',
   'antigravity_oauth': 'Antigravity OAuth',
 };
 

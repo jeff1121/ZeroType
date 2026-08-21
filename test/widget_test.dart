@@ -12,7 +12,6 @@ void main() {
       proxyApiKey: null,
       proxyRoot: null,
       officialCredentialMethod: CredentialMethod.apiKey,
-      geminiOauthConnected: false,
       antigravityAvailable: false,
     );
 
@@ -30,7 +29,6 @@ void main() {
       proxyApiKey: null,
       proxyRoot: null,
       officialCredentialMethod: null,
-      geminiOauthConnected: true,
       antigravityAvailable: true,
     );
 

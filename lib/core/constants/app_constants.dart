@@ -11,9 +11,6 @@ class AppConstants {
   static const String officialCredentialMethodKey =
       'official_credential_method';
   static const String proxyRootKey = 'proxy_root';
-  static const String geminiOauthAccessTokenKey = 'gemini_oauth_access_token';
-  static const String geminiOauthRefreshTokenKey = 'gemini_oauth_refresh_token';
-  static const String geminiOauthExpiryKey = 'gemini_oauth_expiry';
   static const String selectedRefinementProviderKey =
       'selected_refinement_provider';
   static const String selectedRefinementModelKey = 'selected_refinement_model';

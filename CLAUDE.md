@@ -70,7 +70,7 @@ dart run flutter_launcher_icons
 
 狀態分兩層：
 
-- GetIt 持有長生命週期基礎設施單例（`SharedPreferences`、`Dio`、轉寫 / 快捷鍵 / 系統列 / 音效、Gemini OAuth、Antigravity 引用、Proxy 模型目錄、模型設定 repository，以及歷史 repository）。
+- GetIt 持有長生命週期基礎設施單例（`SharedPreferences`、`Dio`、轉寫 / 快捷鍵 / 系統列 / 音效、Antigravity 憑證引用、Antigravity OAuth 登入、Proxy 模型目錄、模型設定 repository，以及歷史 repository）。
 - 產生出來的 Riverpod provider / controller 持有功能與 UI 狀態。部分功能 repository 由 Riverpod 直接建構，沒有註冊到 GetIt；改某個功能時沿用該功能既有模式。
 
 功能大致遵循 `features/<feature>/{domain,data,presentation}`：介面在 `domain`、實作在 `data`、Riverpod controller 與頁面在 `presentation`。跨功能的錄音與轉寫編排刻意放在 `lib/core/controllers/zero_type_controller.dart`。
@@ -110,9 +110,8 @@ Windows 由 `windows/runner/channel_handler.cpp` 用 `SendInput` 實作 Ctrl+V�
 
 - `assets/config/providers.json`：官方通道尚未有使用中憑證、或官方模型目錄查詢失敗時的後備 provider / model 目錄。
 - `prompts/SpeechToText.prompt`：內建預設轉寫提示詞。
-- `SharedPreferences`：provider、使用中通道、各通道的 model / API Key、官方通道憑證方式、Proxy 根位址、Gemini OAuth token、主題、快捷鍵、開機 / 音效設定、保留天數與最長錄音時間。舊的 `custom_endpoint_*` 與 `api_key_speech_<provider>` 會在讀取時遷移。
-- `assets/config/oauth.json`：ZeroType OAuth client。`clientId` 空白時，「用 Google 登入」會失敗並提示尚未設定。
-- Antigravity 本機登入引用讀 `~/.gemini/oauth_creds.json`（Windows 為 `%USERPROFILE%\.gemini\oauth_creds.json`）。不把 refresh_token 複製進 ZeroType；access 過期時用 Gemini CLI 公開 OAuth client 換新，並寫回該檔的 `access_token` / `expiry_date`。
+- `SharedPreferences`：provider、使用中通道、各通道的 model / API Key、官方通道憑證方式、Proxy 根位址、主題、快捷鍵、開機 / 音效設定、保留天數與最長錄音時間。舊的 `custom_endpoint_*` 與 `api_key_speech_<provider>` 會在讀取時遷移。
+- Antigravity 憑證有兩種來源：(1) 本機既有登入 `~/.cli-proxy-api/antigravity-*.json` 或 `~/.gemini/oauth_creds.json`；(2) App 內「Antigravity OAuth」按鈕觸發 `AntigravityOauthService`，用內建 Antigravity OAuth client（含 `cclog`、`experimentsandconfigs` scope）走 Google 授權，並以 `loadCodeAssist`（`ideType=ANTIGRAVITY`，查不到時 `onboardUser` 輪詢）取得 project id，落地成 `~/.cli-proxy-api/antigravity-<email>.json`。`AntigravityAuthSource` 統一負責讀取與 access 過期續期（refresh 後寫回同一檔）。
 - `dictionary.txt`：排序後的自訂字典詞。
 - `SpeechToText_Custom.prompt`：使用者覆寫的提示詞。
 - `history.json` 與 `history_audio/`：保留的轉寫中繼資料與音檔。

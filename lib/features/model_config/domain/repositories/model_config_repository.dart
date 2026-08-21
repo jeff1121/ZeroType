@@ -35,23 +35,4 @@ abstract class ModelConfigRepository {
     String providerId,
     CredentialMethod? method,
   );
-
-  Future<GeminiOauthTokens?> getGeminiOauthTokens();
-  Future<void> saveGeminiOauthTokens(GeminiOauthTokens tokens);
-  Future<void> clearGeminiOauthTokens();
-}
-
-class GeminiOauthTokens {
-  const GeminiOauthTokens({
-    required this.accessToken,
-    required this.refreshToken,
-    required this.expiry,
-  });
-
-  final String accessToken;
-  final String refreshToken;
-  final DateTime expiry;
-
-  bool get isAccessTokenFresh =>
-      expiry.isAfter(DateTime.now().add(const Duration(seconds: 60)));
 }

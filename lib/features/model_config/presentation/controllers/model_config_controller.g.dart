@@ -77,7 +77,7 @@ final class SpeechProviderControllerProvider
 }
 
 String _$speechProviderControllerHash() =>
-    r'1356631c1034c20a6aa3e23cac33017d8a296045';
+    r'9340ddf4586d383051d5b84649a6a58af4e3e38a';
 
 abstract class _$SpeechProviderController
     extends $AsyncNotifier<SpeechConnectionState> {

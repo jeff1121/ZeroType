@@ -9,7 +9,6 @@ import 'package:zero_type/core/services/recording_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero_type/core/services/sound_service.dart';
 import 'package:zero_type/core/services/antigravity_auth_source.dart';
-import 'package:zero_type/core/services/gemini_oauth_service.dart';
 import 'package:zero_type/core/services/speech_recognition_service.dart';
 import 'package:zero_type/core/state/zero_type_state.dart';
 import 'package:zero_type/features/history/domain/entities/transcription_record.dart';
@@ -234,13 +233,6 @@ class ZeroTypeController extends _$ZeroTypeController {
           accessToken: null,
           antigravityProjectId: null,
         );
-      case CredentialMethod.geminiOauth:
-        try {
-          final token = await getIt<GeminiOauthService>().resolveAccessToken();
-          return (apiKey: null, accessToken: token, antigravityProjectId: null);
-        } catch (_) {
-          throw Exception('Gemini OAuth 憑證失效');
-        }
       case CredentialMethod.antigravityOauth:
         final data = await getIt<AntigravityAuthSource>().getAuthData();
         if (data == null) {

@@ -110,7 +110,17 @@ flutter run -d macos
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.1.1] - 當前版本
+### [v1.2.0] - 當前版本
+- **Antigravity OAuth 一鍵登入落地憑證** 🔑
+  - 新增「Antigravity OAuth」憑證方式：直接用 Google 帳號在 App 內完成授權，無需先安裝 Antigravity 或 CLI。
+  - 參考開源專案 CLIProxyAPI 做法，使用 Antigravity 專用 OAuth client 與 scope（含 `cclog`、`experimentsandconfigs`），透過本機 callback 完成授權。
+  - 自動以 `loadCodeAssist`（`ideType=ANTIGRAVITY`，必要時 `onboardUser` 輪詢）取得 Project ID，並落地成 `~/.cli-proxy-api/antigravity-<email>.json`，供轉寫直接引用與自動續期。
+- **移除 Gemini OAuth 通道** 🧹
+  - 該通道目前無法正常使用，暫時移除按鈕與相關程式，讓憑證設定畫面更乾淨（保留 API Key 與 Antigravity OAuth 兩種方式）。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.2.0+4`。
+
+### [v1.1.1]
 - **修復 macOS 安裝檔簽章封印** 🔐
   - 改為乾淨建置後直接打包，不再修改已簽章的 `.app` 內容。
   - 發布前與 DMG 打包後均執行 `codesign --verify --deep --strict`，避免再次發布資源遭修改的損毀 App。
