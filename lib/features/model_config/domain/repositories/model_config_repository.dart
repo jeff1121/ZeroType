@@ -35,4 +35,10 @@ abstract class ModelConfigRepository {
     String providerId,
     CredentialMethod? method,
   );
+
+  Future<String?> getAzureEndpoint(String providerId);
+  Future<void> saveAzureEndpoint(String providerId, String endpoint);
+
+  Future<String?> getAzureApiVersion(String providerId);
+  Future<void> saveAzureApiVersion(String providerId, String apiVersion);
 }

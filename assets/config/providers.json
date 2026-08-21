@@ -23,6 +23,11 @@
           "name": "Gemini 2.5 Flash"
         }
       ]
+    },
+    {
+      "id": "azure",
+      "name": "Azure",
+      "models": []
     }
   ]
 }

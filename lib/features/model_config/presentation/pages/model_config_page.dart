@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zero_type/core/constants/app_constants.dart';
 import '../controllers/model_config_controller.dart';
 import '../../domain/entities/ai_provider.dart';
 import '../../domain/entities/speech_connection.dart';
@@ -148,6 +149,7 @@ class _SpeechConfigSection extends ConsumerWidget {
         final isGeminiOfficial =
             state.providerId == 'gemini' &&
             state.channel == SpeechChannel.official;
+        final isAzure = state.isAzure;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +170,7 @@ class _SpeechConfigSection extends ConsumerWidget {
             const Text('選擇通道', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             _ChoiceRow(
-              values: SpeechChannel.values
+              values: state.allowedChannels
                   .map((c) => (id: c.id, label: c.displayName))
                   .toList(),
               selectedId: state.channel.id,
@@ -176,7 +178,7 @@ class _SpeechConfigSection extends ConsumerWidget {
                   .read(speechProviderControllerProvider.notifier)
                   .selectChannel(SpeechChannelX.fromId(id)),
             ),
-            if (state.channel == SpeechChannel.proxy) ...[
+            if (!isAzure && state.channel == SpeechChannel.proxy) ...[
               const SizedBox(height: 24),
               _TextSaveField(
                 label: 'Proxy 根位址',
@@ -189,21 +191,42 @@ class _SpeechConfigSection extends ConsumerWidget {
                 savedMessage: 'Proxy 根位址已儲存',
               ),
             ],
-            const SizedBox(height: 24),
-            _ModelPicker(state: state, bundledModels: selectedProvider.models),
-            const SizedBox(height: 24),
-            const Text('使用中憑證', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            if (isGeminiOfficial)
-              _GeminiOfficialCredentials(state: state)
-            else
-              _ApiKeyInput(
-                resetKey: '${state.providerId}-${state.channel.id}-key',
-                initialValue: state.activeApiKey ?? '',
-                onSave: (val) => ref
-                    .read(speechProviderControllerProvider.notifier)
-                    .saveApiKey(val),
+            if (isAzure) ...[
+              const SizedBox(height: 24),
+              const Text(
+                '使用中憑證',
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
+              const SizedBox(height: 12),
+              _AzureCredentials(state: state),
+              const SizedBox(height: 24),
+              _ModelPicker(
+                state: state,
+                bundledModels: selectedProvider.models,
+              ),
+            ] else ...[
+              const SizedBox(height: 24),
+              _ModelPicker(
+                state: state,
+                bundledModels: selectedProvider.models,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '使用中憑證',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              if (isGeminiOfficial)
+                _GeminiOfficialCredentials(state: state)
+              else
+                _ApiKeyInput(
+                  resetKey: '${state.providerId}-${state.channel.id}-key',
+                  initialValue: state.activeApiKey ?? '',
+                  onSave: (val) => ref
+                      .read(speechProviderControllerProvider.notifier)
+                      .saveApiKey(val),
+                ),
+            ],
           ],
         );
       },
@@ -284,28 +307,43 @@ class _ModelPicker extends ConsumerWidget {
         AiModel(id: selectedId, name: selectedId),
     ];
     final isLoading = officialAsync.isLoading || proxyAsync.isLoading;
-    final attemptedOfficial = switch (state.activeCredentialMethod) {
-      CredentialMethod.apiKey =>
-        (state.activeApiKey != null && state.activeApiKey!.isNotEmpty),
-      CredentialMethod.antigravityOauth => state.antigravityAvailable,
-      null => false,
-    };
+    final attemptedOfficial = state.isAzure
+        ? (state.activeApiKey != null &&
+              state.activeApiKey!.isNotEmpty &&
+              state.azureEndpoint != null &&
+              state.azureEndpoint!.isNotEmpty)
+        : switch (state.activeCredentialMethod) {
+            CredentialMethod.apiKey =>
+              (state.activeApiKey != null && state.activeApiKey!.isNotEmpty),
+            CredentialMethod.antigravityOauth => state.antigravityAvailable,
+            null => false,
+          };
     final showOfficialFallback =
         state.channel == SpeechChannel.official &&
         !officialAsync.isLoading &&
         liveOfficial == null &&
         attemptedOfficial;
+    final azureNeedsManualInput =
+        state.isAzure &&
+        !officialAsync.isLoading &&
+        (liveOfficial == null || liveOfficial.isEmpty);
     final showCatalogError = state.channel == SpeechChannel.official
         ? (officialAsync.hasError || showOfficialFallback)
         : proxyAsync.hasError;
-    final catalogHint = '模型目錄暫時查不到，仍可使用上次選擇的模型';
+    final catalogHint = state.isAzure
+        ? '部署清單暫時查不到，請手動輸入部署名稱'
+        : '模型目錄暫時查不到，仍可使用上次選擇的模型';
+    final pickerLabel = state.isAzure ? '選擇部署' : '選擇模型';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text('選擇模型', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              pickerLabel,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(width: 4),
             const Text(
               '*',
@@ -345,17 +383,30 @@ class _ModelPicker extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        _ModelDropdown(
-          models: models,
-          selectedModelId: selectedId,
-          onChanged: (val) {
-            if (val != null) {
-              ref
-                  .read(speechProviderControllerProvider.notifier)
-                  .selectModel(val);
-            }
-          },
-        ),
+        if (azureNeedsManualInput)
+          _TextSaveField(
+            label: '部署名稱',
+            hintText: '手動輸入 Whisper 部署名稱',
+            initialValue: selectedId ?? '',
+            resetKey: '${state.providerId}-azure-deployment',
+            requiredField: true,
+            onSave: (val) => ref
+                .read(speechProviderControllerProvider.notifier)
+                .selectModel(val.trim()),
+            savedMessage: '部署名稱已儲存',
+          )
+        else
+          _ModelDropdown(
+            models: models,
+            selectedModelId: selectedId,
+            onChanged: (val) {
+              if (val != null) {
+                ref
+                    .read(speechProviderControllerProvider.notifier)
+                    .selectModel(val);
+              }
+            },
+          ),
         if (showCatalogError)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -367,6 +418,49 @@ class _ModelPicker extends ConsumerWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _AzureCredentials extends ConsumerWidget {
+  const _AzureCredentials({required this.state});
+
+  final SpeechConnectionState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(speechProviderControllerProvider.notifier);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _TextSaveField(
+          label: 'Service Endpoint',
+          hintText: 'https://<resource>.openai.azure.com',
+          initialValue: state.azureEndpoint ?? '',
+          resetKey: '${state.providerId}-azure-endpoint',
+          requiredField: true,
+          onSave: notifier.saveAzureEndpoint,
+          savedMessage: 'Service Endpoint 已儲存',
+        ),
+        const SizedBox(height: 24),
+        _ApiKeyInput(
+          resetKey: '${state.providerId}-azure-key',
+          initialValue: state.activeApiKey ?? '',
+          onSave: notifier.saveApiKey,
+          label: 'API Key（Access Token）',
+        ),
+        const SizedBox(height: 24),
+        _TextSaveField(
+          label: 'API Version',
+          hintText: AppConstants.defaultAzureApiVersion,
+          initialValue:
+              state.azureApiVersion ?? AppConstants.defaultAzureApiVersion,
+          resetKey: '${state.providerId}-azure-api-version',
+          requiredField: true,
+          onSave: notifier.saveAzureApiVersion,
+          savedMessage: 'API Version 已儲存',
+        ),
       ],
     );
   }
@@ -504,16 +598,18 @@ class _ApiKeyInput extends StatelessWidget {
     required this.resetKey,
     required this.initialValue,
     required this.onSave,
+    this.label = 'API Key',
   });
 
   final String resetKey;
   final String initialValue;
   final Function(String) onSave;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return _TextSaveField(
-      label: 'API Key',
+      label: label,
       hintText: '輸入 API Key',
       initialValue: initialValue,
       resetKey: resetKey,

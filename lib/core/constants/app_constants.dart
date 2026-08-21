@@ -11,6 +11,10 @@ class AppConstants {
   static const String officialCredentialMethodKey =
       'official_credential_method';
   static const String proxyRootKey = 'proxy_root';
+  static const String azureEndpointKey = 'azure_endpoint';
+  static const String azureApiVersionKey = 'azure_api_version';
+  static const String defaultAzureApiVersion = '2024-10-21';
+  static const String azureDeploymentsApiVersion = '2023-03-15-preview';
   static const String selectedRefinementProviderKey =
       'selected_refinement_provider';
   static const String selectedRefinementModelKey = 'selected_refinement_model';

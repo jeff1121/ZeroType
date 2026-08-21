@@ -26,6 +26,8 @@ class SpeechRecognitionService {
     String? antigravityProjectId,
     bool isAntigravity = false,
     String? proxyRoot,
+    String? azureEndpoint,
+    String? azureApiVersion,
   }) async {
     print(
       '[SpeechRecognition] Transcribing with $provider ($model) via ${channel.id}${isAntigravity ? " (Antigravity Direct)" : ""}',
@@ -60,6 +62,15 @@ class SpeechRecognitionService {
           prompt: prompt,
           channel: channel,
           proxyRoot: proxyRoot,
+        );
+      case SpeechConnectionState.azureProviderId:
+        return _transcribeWithAzure(
+          audioFilePath: audioFilePath,
+          apiKey: apiKey,
+          model: model,
+          prompt: prompt,
+          endpoint: azureEndpoint,
+          apiVersion: azureApiVersion,
         );
       default:
         throw Exception('不支援的語音辨識服務商：$provider');
@@ -118,6 +129,86 @@ class SpeechRecognitionService {
     final outputTokens = usageMap?['output_tokens'] as int?;
 
     return (text: text, inputTokens: inputTokens, outputTokens: outputTokens);
+  }
+
+  Future<TranscriptionResult> _transcribeWithAzure({
+    required String audioFilePath,
+    required String model,
+    required String prompt,
+    String? apiKey,
+    String? endpoint,
+    String? apiVersion,
+  }) async {
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('缺少使用中憑證');
+    }
+
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        audioFilePath,
+        filename: File(audioFilePath).uri.pathSegments.last,
+      ),
+      'response_format': 'json',
+      if (prompt.isNotEmpty) 'prompt': prompt,
+    });
+
+    final url = buildAzureTranscriptionUrl(
+      endpoint: endpoint,
+      deployment: model,
+      apiVersion: apiVersion,
+    );
+
+    final response = await _dio.post<dynamic>(
+      url,
+      data: formData,
+      options: Options(headers: azureApiKeyHeaders(apiKey)),
+    );
+
+    Map<String, dynamic>? data;
+    if (response.data is Map<String, dynamic>) {
+      data = response.data as Map<String, dynamic>;
+    } else if (response.data is String) {
+      try {
+        data = jsonDecode(response.data as String) as Map<String, dynamic>;
+      } catch (_) {
+        return (
+          text: (response.data as String).trim(),
+          inputTokens: null,
+          outputTokens: null,
+        );
+      }
+    }
+
+    final text = (data?['text'] as String? ?? '').trim();
+    return (text: text, inputTokens: null, outputTokens: null);
+  }
+
+  /// Azure Whisper 轉寫 URL：`{endpoint}/openai/deployments/{deployment}/audio/transcriptions?api-version={ver}`
+  static String buildAzureTranscriptionUrl({
+    required String? endpoint,
+    required String deployment,
+    required String? apiVersion,
+  }) {
+    final root = (endpoint ?? '').trim().replaceFirst(RegExp(r'/+$'), '');
+    if (root.isEmpty) {
+      throw Exception('尚未設定 Azure Service Endpoint');
+    }
+    final deploymentName = deployment.trim();
+    if (deploymentName.isEmpty) {
+      throw Exception('尚未選擇 Azure 部署');
+    }
+    final version = (apiVersion ?? '').trim();
+    if (version.isEmpty) {
+      throw Exception('尚未設定 Azure API Version');
+    }
+    return '$root/openai/deployments/${Uri.encodeComponent(deploymentName)}/audio/transcriptions?api-version=${Uri.encodeQueryComponent(version)}';
+  }
+
+  static Map<String, String> azureApiKeyHeaders(String apiKey) {
+    if (apiKey.isEmpty) {
+      throw Exception('缺少使用中憑證');
+    }
+    return {'api-key': apiKey};
   }
 
   Future<TranscriptionResult> _transcribeWithAntigravityDirect({

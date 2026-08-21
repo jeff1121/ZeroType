@@ -60,4 +60,4 @@
 - **憑證儲存**：API Key 與各項設定存於 `SharedPreferences`（非安全儲存），非原規劃的 `flutter_secure_storage`。
 - **雙通道與多元憑證**：語音辨識已擴充為「官方 / Proxy」雙通道；官方憑證方式含 **API Key** 與 **Antigravity OAuth**（Gemini OAuth 已於 v1.2.0 移除）。
 - **即時模型目錄**：官方通道有憑證時會向 Provider 官方 API 查詢可用模型，查不到時退回 `providers.json`。
-- **規劃中新功能**：新增 **Azure OpenAI Whisper** 作為第三個語音辨識 Provider（僅官方通道，使用者填 Endpoint / API Key / API Version）。詳見 `Docs/Tasks.md` 第九節，為目前唯一進行中的待實作功能。
+- **Azure OpenAI Whisper**：第三個語音辨識 Provider（僅官方通道，使用者填 Endpoint / API Key / API Version；model id 為部署名稱）。詳見 `Docs/Tasks.md` 第九節。

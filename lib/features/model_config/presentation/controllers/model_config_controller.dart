@@ -56,17 +56,24 @@ class SpeechProviderController extends _$SpeechProviderController {
       proxyRoot: await _repo.getProxyRoot(id),
       officialCredentialMethod: await _repo.getOfficialCredentialMethod(id),
       antigravityAvailable: await getIt<AntigravityAuthSource>().isAvailable,
+      azureEndpoint: await _repo.getAzureEndpoint(id),
+      azureApiVersion: await _repo.getAzureApiVersion(id),
     );
   }
 
   Future<void> selectProvider(String providerId) async {
     await _repo.saveSelectedSpeechProviderId(providerId);
+    if (providerId == SpeechConnectionState.azureProviderId) {
+      await _repo.saveSpeechChannel(providerId, SpeechChannel.official);
+    }
     ref.invalidateSelf();
   }
 
   Future<void> selectChannel(SpeechChannel channel) async {
     final state = await future;
     if (state.providerId == null) return;
+    final allowed = SpeechConnectionState.allowedChannelsFor(state.providerId);
+    if (!allowed.contains(channel)) return;
     await _repo.saveSpeechChannel(state.providerId!, channel);
     ref.invalidateSelf();
   }
@@ -99,6 +106,20 @@ class SpeechProviderController extends _$SpeechProviderController {
     final state = await future;
     if (state.providerId == null) return;
     await _repo.saveProxyRoot(state.providerId!, root);
+    ref.invalidateSelf();
+  }
+
+  Future<void> saveAzureEndpoint(String endpoint) async {
+    final state = await future;
+    if (state.providerId == null) return;
+    await _repo.saveAzureEndpoint(state.providerId!, endpoint);
+    ref.invalidateSelf();
+  }
+
+  Future<void> saveAzureApiVersion(String apiVersion) async {
+    final state = await future;
+    if (state.providerId == null) return;
+    await _repo.saveAzureApiVersion(state.providerId!, apiVersion);
     ref.invalidateSelf();
   }
 
@@ -160,6 +181,7 @@ Future<List<AiModel>?> officialModels(Ref ref) async {
       isAntigravity:
           connection.activeCredentialMethod ==
           CredentialMethod.antigravityOauth,
+      azureEndpoint: auth.azureEndpoint,
     );
   } catch (e) {
     print('[OfficialModels] 目錄查詢失敗：$e');
@@ -167,18 +189,47 @@ Future<List<AiModel>?> officialModels(Ref ref) async {
   }
 }
 
-Future<({String? apiKey, String? accessToken})?> _resolveCatalogAuth(
-  SpeechConnectionState connection,
-) async {
+Future<
+  ({
+    String? apiKey,
+    String? accessToken,
+    String? azureEndpoint,
+    String? azureApiVersion,
+  })?
+>
+_resolveCatalogAuth(SpeechConnectionState connection) async {
+  if (connection.isAzure) {
+    final key = connection.activeApiKey;
+    final endpoint = connection.azureEndpoint;
+    if (key == null || key.isEmpty || endpoint == null || endpoint.isEmpty) {
+      return null;
+    }
+    return (
+      apiKey: key,
+      accessToken: null,
+      azureEndpoint: endpoint,
+      azureApiVersion: connection.azureApiVersion,
+    );
+  }
   switch (connection.activeCredentialMethod) {
     case CredentialMethod.apiKey:
       final key = connection.activeApiKey;
       if (key == null || key.isEmpty) return null;
-      return (apiKey: key, accessToken: null);
+      return (
+        apiKey: key,
+        accessToken: null,
+        azureEndpoint: null,
+        azureApiVersion: null,
+      );
     case CredentialMethod.antigravityOauth:
       final token = await getIt<AntigravityAuthSource>().readAccessToken();
       if (token == null) return null;
-      return (apiKey: null, accessToken: token);
+      return (
+        apiKey: null,
+        accessToken: token,
+        azureEndpoint: null,
+        azureApiVersion: null,
+      );
     case null:
       return null;
   }

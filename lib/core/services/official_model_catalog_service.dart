@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:zero_type/core/constants/app_constants.dart';
 import 'package:zero_type/features/model_config/domain/entities/ai_provider.dart';
+import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 
 /// 向 Provider 官方 API 查詢模型目錄。
 class OfficialModelCatalogService {
@@ -44,6 +46,7 @@ class OfficialModelCatalogService {
     String? apiKey,
     String? accessToken,
     bool isAntigravity = false,
+    String? azureEndpoint,
   }) async {
     if (isAntigravity) {
       return antigravityModels;
@@ -53,6 +56,8 @@ class OfficialModelCatalogService {
         return _listGemini(apiKey: apiKey, accessToken: accessToken);
       case 'openai':
         return _listOpenAi(apiKey: apiKey, accessToken: accessToken);
+      case SpeechConnectionState.azureProviderId:
+        return _listAzure(apiKey: apiKey, endpoint: azureEndpoint);
       default:
         return const [];
     }
@@ -102,6 +107,61 @@ class OfficialModelCatalogService {
       ),
     );
     return parseOpenAiModels(response.data);
+  }
+
+  /// 列出 Azure OpenAI 部署。失敗回傳空清單，不做 Whisper 過濾。
+  Future<List<AiModel>> _listAzure({String? apiKey, String? endpoint}) async {
+    final root = normalizeAzureEndpoint(endpoint);
+    if (root.isEmpty || apiKey == null || apiKey.isEmpty) {
+      return const [];
+    }
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        azureDeploymentsUrl(root),
+        options: Options(
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          headers: azureApiKeyHeaders(apiKey),
+        ),
+      );
+      return parseAzureDeployments(response.data);
+    } catch (e) {
+      print('[AzureCatalog] 部署清單查詢失敗：$e');
+      return const [];
+    }
+  }
+
+  static String normalizeAzureEndpoint(String? raw) {
+    final trimmed = (raw ?? '').trim();
+    if (trimmed.isEmpty) return '';
+    return trimmed.replaceFirst(RegExp(r'/+$'), '');
+  }
+
+  static String azureDeploymentsUrl(String endpoint) {
+    final root = normalizeAzureEndpoint(endpoint);
+    return '$root/openai/deployments?api-version=${AppConstants.azureDeploymentsApiVersion}';
+  }
+
+  static Map<String, String> azureApiKeyHeaders(String apiKey) => {
+    'api-key': apiKey,
+  };
+
+  /// 解析 Azure 部署清單；以部署名稱當 model id，不過濾。
+  List<AiModel> parseAzureDeployments(dynamic data) {
+    if (data is! Map) return const [];
+    final raw = data['data'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) {
+          final id = item['id']?.toString().trim() ?? '';
+          if (id.isEmpty) return null;
+          final model = item['model']?.toString().trim() ?? '';
+          final name = (model.isNotEmpty && model != id) ? '$id（$model）' : id;
+          return AiModel(id: id, name: name);
+        })
+        .whereType<AiModel>()
+        .toList();
   }
 
   /// 只保留能 generateContent、且不像圖片／嵌入／TTS 的 Gemini 模型。

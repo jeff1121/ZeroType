@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案概覽
 
-ZeroType 是一套 Flutter 桌面系統列（system tray）應用，支援 macOS 與 Windows。使用者按下全域快捷鍵後開始錄音，音檔會送到 OpenAI 或 Gemini 的語音轉寫 API，轉寫結果與音檔存入本機歷史紀錄，文字複製到剪貼簿，再透過原生平台橋接模擬貼上到先前聚焦的應用程式。使用者介面文案以繁體中文為主。
+ZeroType 是一套 Flutter 桌面系統列（system tray）應用，支援 macOS 與 Windows。使用者按下全域快捷鍵後開始錄音，音檔會送到 OpenAI、Gemini 或 Azure OpenAI Whisper 的語音轉寫 API，轉寫結果與音檔存入本機歷史紀錄，文字複製到剪貼簿，再透過原生平台橋接模擬貼上到先前聚焦的應用程式。使用者介面文案以繁體中文為主。
 
 實作程式碼才是真相來源。`Docs/Requirement.md` 與 `Docs/Tasks.md` 保留歷史規劃，部分敘述已過時：目前沒有獨立的 AI 精修階段，API Key 存在 `SharedPreferences`，不是安全儲存。
 
@@ -14,7 +14,7 @@ ZeroType 是一套 Flutter 桌面系統列（system tray）應用，支援 macOS
 
 - 產品與平台：ZeroType、Flutter、Dart、macOS、Windows、NSPanel、SendInput、CGEvent
 - 套件與工具：Riverpod、GetIt、AutoRoute、Freezed、Dio、build_runner、SharedPreferences、MethodChannel
-- 供應商與模型：OpenAI、Gemini、`gpt-4o-transcribe`、provider / model id
+- 供應商與模型：OpenAI、Gemini、Azure、`gpt-4o-transcribe`、provider / model id
 
 這項規則覆寫 `.agents/rules/flutter-desktop.md` 中「程式與文件一律英文」的要求。識別碼、型別、檔名、目錄名與 API 名稱仍維持英文。
 
@@ -53,7 +53,7 @@ dart run build_runner watch --delete-conflicting-outputs
 dart run flutter_launcher_icons
 ```
 
-已知基準問題：`test/widget_test.dart` 仍是 Flutter 產生的計數器測試，引用不存在的 `MyApp`；它不是有效覆蓋，測試套件健康前需要重寫。
+已知基準問題：`test/widget_test.dart` 目前覆蓋 `SpeechConnectionState.isReady`，不是 Flutter 預設計數器測試。
 
 ## 架構
 
@@ -83,7 +83,7 @@ dart run flutter_launcher_icons
 2. Controller 驗證使用中通道與使用中憑證，並請求麥克風與平台輔助使用權限。
 3. `RecordingService` 把 16 kHz AAC/M4A 寫進暫存目錄，並串流正規化後的振幅。
 4. 再按一次快捷鍵結束錄音。Controller 把自訂或預設語音提示詞與字典提示詞合併。
-5. `SpeechRecognitionService` 依 Provider 與使用中通道組 URL。官方 Gemini 可用 API Key（`x-goog-api-key`）或 OAuth Bearer；Proxy 打 `{根}/v1beta/models/{model}:generateContent` 或 OpenAI 的 `{根}/v1/audio/transcriptions`。憑證失效不改走其他 Key 或通道。
+5. `SpeechRecognitionService` 依 Provider 與使用中通道組 URL。官方 Gemini 可用 API Key（`x-goog-api-key`）或 OAuth Bearer；Proxy 打 `{根}/v1beta/models/{model}:generateContent` 或 OpenAI 的 `{根}/v1/audio/transcriptions`。Azure 僅官方通道，打 `{endpoint}/openai/deployments/{deployment}/audio/transcriptions?api-version={ver}`，認證用 header `api-key`。憑證失效不改走其他 Key 或通道。
 6. 音檔移到持久化歷史目錄，寫入 `TranscriptionRecord`，再用 `model_pricing.dart` 累加花費統計。
 7. 以 Flutter clipboard API 複製結果，再由原生 `keyboard` channel 模擬 Cmd+V 或 Ctrl+V。
 
@@ -110,14 +110,14 @@ Windows 由 `windows/runner/channel_handler.cpp` 用 `SendInput` 實作 Ctrl+V�
 
 - `assets/config/providers.json`：官方通道尚未有使用中憑證、或官方模型目錄查詢失敗時的後備 provider / model 目錄。
 - `prompts/SpeechToText.prompt`：內建預設轉寫提示詞。
-- `SharedPreferences`：provider、使用中通道、各通道的 model / API Key、官方通道憑證方式、Proxy 根位址、主題、快捷鍵、開機 / 音效設定、保留天數與最長錄音時間。舊的 `custom_endpoint_*` 與 `api_key_speech_<provider>` 會在讀取時遷移。
+- `SharedPreferences`：provider、使用中通道、各通道的 model / API Key、官方通道憑證方式、Proxy 根位址、Azure Service Endpoint / API Version、主題、快捷鍵、開機 / 音效設定、保留天數與最長錄音時間。舊的 `custom_endpoint_*` 與 `api_key_speech_<provider>` 會在讀取時遷移。
 - Antigravity 憑證有兩種來源：(1) 本機既有登入 `~/.cli-proxy-api/antigravity-*.json` 或 `~/.gemini/oauth_creds.json`；(2) App 內「Antigravity OAuth」按鈕觸發 `AntigravityOauthService`，用內建 Antigravity OAuth client（含 `cclog`、`experimentsandconfigs` scope）走 Google 授權，並以 `loadCodeAssist`（`ideType=ANTIGRAVITY`，查不到時 `onboardUser` 輪詢）取得 project id，落地成 `~/.cli-proxy-api/antigravity-<email>.json`。`AntigravityAuthSource` 統一負責讀取與 access 過期續期（refresh 後寫回同一檔）。
 - `dictionary.txt`：排序後的自訂字典詞。
 - `SpeechToText_Custom.prompt`：使用者覆寫的提示詞。
 - `history.json` 與 `history_audio/`：保留的轉寫中繼資料與音檔。
 - `history_stats.json`：累計次數與花費。單筆刪除與過期清除不會減少它；`clearAll()` 才會重設。
 
-官方通道有使用中憑證時，模型下拉由 `OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`）。查不到或尚未有憑證時才退回 `providers.json`。新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；後備清單才改 `providers.json`。
+官方通道有使用中憑證時，模型下拉由 `OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`；Azure：`{endpoint}/openai/deployments?api-version=2023-03-15-preview`，以部署名稱當 model id，不過濾）。查不到或尚未有憑證時才退回 `providers.json`；Azure 查不到時改顯示手動輸入部署名稱。新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；後備清單才改 `providers.json`。
 
 ## 產生程式與倉庫慣例
 

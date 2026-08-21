@@ -135,7 +135,7 @@
 - [x] Windows 貼上功能（`SendInput`）
 - [ ] 錯誤處理細化（網路失敗重試、API 額度不足提示）— *非阻塞 backlog*
 
-> **目前唯一進行中的新功能為第九節「Azure OpenAI Whisper Provider（待實作）」。** 其餘 Plan/Task 均已與現有原始碼同步。
+> **第九節「Azure OpenAI Whisper Provider」已於本 branch 實作，待真機驗證與 PR 審核。** 其餘 Plan/Task 均已與現有原始碼同步。
 
 ---
 
@@ -304,18 +304,18 @@
 
 ---
 
-## 🟦 九、Azure OpenAI Whisper Provider（待實作 — 本 Branch 目標）
+## 🟦 九、Azure OpenAI Whisper Provider（已實作 — 本 Branch 目標）
 
 > 分支：`azure-openai-whisper`。新增 Azure 作為第三個語音辨識 Provider，走 Azure OpenAI 部署的 Whisper。
 > 使用者只需自行填寫 **Service Endpoint、API Key、API Version**（皆為必填）。
 > 依 Owner 指示：**不做 Whisper 過濾**（企業私有部署 endpoint/token 本就對應 Whisper 服務），refresh 直接列出部署清單。
 
 ### 9.1 需求與 UX
-- [ ] Provider 列新增 `Azure`（label 直接叫「Azure」）
-- [ ] 選 Azure 後，通道只顯示「官方」（隱藏 Proxy 並強制 `SpeechChannel.official`）
-- [ ] 憑證區改為 Azure 專用三欄（皆必填）：**Service Endpoint**、**API Key（Access Token）**、**API Version**
-- [ ] 「更新模型目錄」可用：呼叫 Azure 部署清單 API，直接列出部署（不過濾），使用者選其一（即 Whisper 部署）
-- [ ] 查不到部署時提供「手動輸入部署名稱」fallback，仍可完成轉寫
+- [x] Provider 列新增 `Azure`（label 直接叫「Azure」）
+- [x] 選 Azure 後，通道只顯示「官方」（隱藏 Proxy 並強制 `SpeechChannel.official`）
+- [x] 憑證區改為 Azure 專用三欄（皆必填）：**Service Endpoint**、**API Key（Access Token）**、**API Version**
+- [x] 「更新模型目錄」可用：呼叫 Azure 部署清單 API，直接列出部署（不過濾），使用者選其一（即 Whisper 部署）
+- [x] 查不到部署時提供「手動輸入部署名稱」fallback，仍可完成轉寫
 
 ### 9.2 技術細節（已查證）
 - 轉寫：`POST {endpoint}/openai/deployments/{deployment}/audio/transcriptions?api-version={apiVersion}`
@@ -330,26 +330,26 @@
 
 ### 9.3 實作任務（依序）
 **Phase 1 — 資料與狀態層**
-- [ ] `assets/config/providers.json` 新增 `azure` provider（`models` 留空，靠 refresh / 手動輸入）
-- [ ] `app_constants.dart` 新增 `azureEndpointKey`、`azureApiVersionKey`（per-provider）
-- [ ] `speech_connection.dart`：新增 `azureEndpoint`、`azureApiVersion` 欄位；`isAzure` 判斷；`isReady` 的 azure 分支（需 endpoint + apiKey + apiVersion + model 皆備）；提供「每 provider 允許通道」
-- [ ] `model_config_repository(.dart / _impl)`：azure endpoint / api-version 存取
+- [x] `assets/config/providers.json` 新增 `azure` provider（`models` 留空，靠 refresh / 手動輸入）
+- [x] `app_constants.dart` 新增 `azureEndpointKey`、`azureApiVersionKey`（per-provider）
+- [x] `speech_connection.dart`：新增 `azureEndpoint`、`azureApiVersion` 欄位；`isAzure` 判斷；`isReady` 的 azure 分支（需 endpoint + apiKey + apiVersion + model 皆備）；提供「每 provider 允許通道」
+- [x] `model_config_repository(.dart / _impl)`：azure endpoint / api-version 存取
 
 **Phase 2 — 服務層**
-- [ ] Azure 部署清單查詢 + 解析（新 `AzureModelCatalogService` 或在 `OfficialModelCatalogService` 加 azure 分支），失敗回傳空清單
-- [ ] `SpeechRecognitionService._transcribeWithAzure`：組 deployment URL、`api-key` header、multipart、解析 `text`
-- [ ] `model_config_controller.dart`：`build` 載入 endpoint/api-version；`saveAzureEndpoint` / `saveAzureApiVersion`；`selectProvider(azure)` 強制官方通道；`_resolveCatalogAuth` azure 分支（帶 endpoint + api-version）
-- [ ] `zero_type_controller.dart`：`_resolveAuth` azure 分支回傳 apiKey + endpoint；`_transcribe` / `transcribe` 增加 endpoint / api-version 參數並串接
+- [x] Azure 部署清單查詢 + 解析（新 `AzureModelCatalogService` 或在 `OfficialModelCatalogService` 加 azure 分支），失敗回傳空清單
+- [x] `SpeechRecognitionService._transcribeWithAzure`：組 deployment URL、`api-key` header、multipart、解析 `text`
+- [x] `model_config_controller.dart`：`build` 載入 endpoint/api-version；`saveAzureEndpoint` / `saveAzureApiVersion`；`selectProvider(azure)` 強制官方通道；`_resolveCatalogAuth` azure 分支（帶 endpoint + api-version）
+- [x] `zero_type_controller.dart`：`_resolveAuth` azure 分支回傳 apiKey + endpoint；`_transcribe` / `transcribe` 增加 endpoint / api-version 參數並串接
 
 **Phase 3 — UI（`model_config_page.dart`）**
-- [ ] Provider 列加入 Azure；選 Azure → 通道只剩官方且自動選官方
-- [ ] `_AzureCredentials` widget：Endpoint + API Key + API Version 三個輸入與儲存
-- [ ] `_ModelPicker` azure 分支：refresh 列出部署；查不到時顯示手動輸入部署名稱欄位
+- [x] Provider 列加入 Azure；選 Azure → 通道只剩官方且自動選官方
+- [x] `_AzureCredentials` widget：Endpoint + API Key + API Version 三個輸入與儲存
+- [x] `_ModelPicker` azure 分支：refresh 列出部署；查不到時顯示手動輸入部署名稱欄位
 
 **Phase 4 — 驗證**
-- [ ] 單元測試：部署清單 JSON 解析、Azure 轉寫 URL / header 組裝
-- [ ] `dart format` / `flutter analyze` / `flutter test`
-- [ ] build_runner 重新產生（若動到 Riverpod / Freezed / AutoRoute annotation）
+- [x] 單元測試：部署清單 JSON 解析、Azure 轉寫 URL / header 組裝
+- [x] `dart format` / `flutter analyze` / `flutter test`
+- [x] build_runner 重新產生（若動到 Riverpod / Freezed / AutoRoute annotation）
 - [ ] 真機測試：填 endpoint + key + api-version → refresh 出現部署 → 錄音轉寫成功
 
 ### 9.4 注意事項
