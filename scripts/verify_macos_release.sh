@@ -41,11 +41,20 @@ INFO_PLIST="$APP/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
 BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/Zero Type")"
-SIGNATURE="$(codesign -dvv "$APP" 2>&1 | grep '^Signature=' || true)"
+CODESIGN_INFO="$(codesign -dvv "$APP" 2>&1)"
+# 一般憑證簽章（含自簽憑證）會印 Authority=；純 ad-hoc 簽章則印 Signature=adhoc
+AUTHORITY="$(printf '%s\n' "$CODESIGN_INFO" | grep '^Authority=' | head -1 || true)"
+SIGNATURE="$(printf '%s\n' "$CODESIGN_INFO" | grep '^Signature=' || true)"
 
 echo "版本：$VERSION ($BUILD_NUMBER)"
 echo "架構：$ARCHS"
-echo "簽章：${SIGNATURE:-未知}"
+if [[ -n "$AUTHORITY" ]]; then
+  echo "簽章：$AUTHORITY"
+elif [[ -n "$SIGNATURE" ]]; then
+  echo "簽章：$SIGNATURE"
+else
+  echo "簽章：未知"
+fi
 
 if [[ -n "$EXPECTED_VERSION" ]] && [[ "$VERSION" != "$EXPECTED_VERSION" ]]; then
   echo "版本不符：預期 $EXPECTED_VERSION，實際 $VERSION" >&2

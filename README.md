@@ -64,9 +64,9 @@
 
 ## 🚀 快速開始
 
-### 方法一：直接下載 macOS ad-hoc 版本
+### 方法一：直接下載 macOS 版本
 
-> 目前 macOS 安裝檔使用有效的 ad-hoc 簽章，但尚未加入 Apple Developer Program，因此沒有 Developer ID notarization。從網路下載後，macOS Gatekeeper 會加上 quarantine，第一次開啟可能顯示「App 已損毀」或「無法驗證開發者」。
+> 目前 macOS 安裝檔使用自簽章程式碼簽署憑證（非 Apple 官方核發，尚未加入 Apple Developer Program，因此沒有 Developer ID notarization）。從網路下載後，macOS Gatekeeper 會加上 quarantine，第一次開啟會顯示「無法驗證開發者」，需手動允許才能執行。
 
 1. 前往 [Releases](https://github.com/jeff1121/ZeroType/releases) 頁面下載最新的 `.dmg`。
 2. 開啟 `.dmg`，將 **Zero Type.app** 拖入 `/Applications`。

@@ -69,6 +69,31 @@ jobs:
       - name: 建置 macOS Release
         run: flutter build macos --release
 
+      - name: 匯入程式碼簽署憑證
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/zerotype_signing.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/zerotype-signing.keychain-db"
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          rm -f "$CERTIFICATE_PATH"
+
+      - name: 簽署 macOS App（自簽憑證 ZeroType）
+        run: |
+          codesign --force --deep --sign "ZeroType" "build/macos/Build/Products/Release/Zero Type.app"
+
       - name: 驗證建置後 App 簽章封印
         run: |
           chmod +x scripts/verify_macos_release.sh
