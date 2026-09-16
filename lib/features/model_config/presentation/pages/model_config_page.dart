@@ -278,14 +278,23 @@ class _ChoiceRow extends StatelessWidget {
   }
 }
 
-class _ModelPicker extends ConsumerWidget {
+class _ModelPicker extends ConsumerStatefulWidget {
   const _ModelPicker({required this.state, required this.bundledModels});
 
   final SpeechConnectionState state;
   final List<AiModel> bundledModels;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ModelPicker> createState() => _ModelPickerState();
+}
+
+class _ModelPickerState extends ConsumerState<_ModelPicker> {
+  bool _manualAzureInput = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    final bundledModels = widget.bundledModels;
     final officialAsync = state.channel == SpeechChannel.official
         ? ref.watch(officialModelsProvider)
         : const AsyncData<List<AiModel>?>(null);
@@ -323,15 +332,12 @@ class _ModelPicker extends ConsumerWidget {
         !officialAsync.isLoading &&
         liveOfficial == null &&
         attemptedOfficial;
-    final azureNeedsManualInput =
-        state.isAzure &&
-        !officialAsync.isLoading &&
-        (liveOfficial == null || liveOfficial.isEmpty);
+    final isManualMode = state.isAzure && (_manualAzureInput || models.isEmpty);
     final showCatalogError = state.channel == SpeechChannel.official
         ? (officialAsync.hasError || showOfficialFallback)
         : proxyAsync.hasError;
     final catalogHint = state.isAzure
-        ? '部署清單暫時查不到，請手動輸入部署名稱'
+        ? '部署清單暫時無法自動取得，已提供預設選項，您亦可手動指定部署名稱'
         : '模型目錄暫時查不到，仍可使用上次選擇的模型';
     final pickerLabel = state.isAzure ? '選擇部署' : '選擇模型';
 
@@ -383,19 +389,33 @@ class _ModelPicker extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (azureNeedsManualInput)
+        if (isManualMode) ...[
           _TextSaveField(
             label: '部署名稱',
-            hintText: '手動輸入 Whisper 部署名稱',
+            hintText: '輸入 Azure 上的 Whisper 部署名稱（例如 whisper 或自訂名稱）',
             initialValue: selectedId ?? '',
             resetKey: '${state.providerId}-azure-deployment',
             requiredField: true,
-            onSave: (val) => ref
-                .read(speechProviderControllerProvider.notifier)
-                .selectModel(val.trim()),
+            onSave: (val) {
+              ref
+                  .read(speechProviderControllerProvider.notifier)
+                  .selectModel(val.trim());
+            },
             savedMessage: '部署名稱已儲存',
-          )
-        else
+          ),
+          if (models.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: () => setState(() => _manualAzureInput = false),
+              icon: const Icon(Icons.list, size: 15),
+              label: const Text('切換回從清單選擇部署'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ] else ...[
           _ModelDropdown(
             models: models,
             selectedModelId: selectedId,
@@ -407,6 +427,20 @@ class _ModelPicker extends ConsumerWidget {
               }
             },
           ),
+          if (state.isAzure) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: () => setState(() => _manualAzureInput = true),
+              icon: const Icon(Icons.edit_outlined, size: 14),
+              label: const Text('我的部署名稱不在清單中？手動指定自訂部署名稱...'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ],
         if (showCatalogError)
           Padding(
             padding: const EdgeInsets.only(top: 8),

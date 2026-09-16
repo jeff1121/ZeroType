@@ -113,6 +113,12 @@ void main() {
         ),
         'https://my-res.openai.azure.com/openai/models?api-version=${AppConstants.defaultAzureApiVersion}',
       );
+      expect(
+        OfficialModelCatalogService.azureOpenAiCompatModelsUrl(
+          'https://my-res.openai.azure.com/openai/deployments/foo',
+        ),
+        'https://my-res.openai.azure.com/openai/v1/models',
+      );
       expect(OfficialModelCatalogService.azureApiKeyHeaders('token'), {
         'api-key': 'token',
       });

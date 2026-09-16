@@ -27,7 +27,12 @@
     {
       "id": "azure",
       "name": "Azure",
-      "models": []
+      "models": [
+        {
+          "id": "whisper",
+          "name": "OpenAI Whisper (whisper)"
+        }
+      ]
     }
   ]
 }

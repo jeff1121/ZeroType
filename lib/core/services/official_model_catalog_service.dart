@@ -109,14 +109,18 @@ class OfficialModelCatalogService {
     return parseOpenAiModels(response.data);
   }
 
-  /// 列出 Azure OpenAI 部署。失敗回傳空清單，不做 Whisper 過濾。
-  /// 舊 data-plane `/openai/deployments` 在不少資源已 404，接著改試 `/openai/models`。
+  /// 列出 Azure OpenAI 部署與模型。失敗回傳空清單，不做 Whisper 過濾。
+  /// 依序嘗試：舊 data-plane `/openai/deployments`、`/openai/models` 與 OpenAI 相容端點 `/openai/v1/models`。
   Future<List<AiModel>> _listAzure({String? apiKey, String? endpoint}) async {
     final root = normalizeAzureEndpoint(endpoint);
     if (root.isEmpty || apiKey == null || apiKey.isEmpty) {
       return const [];
     }
-    final urls = [azureDeploymentsUrl(root), azureModelsUrl(root)];
+    final urls = [
+      azureDeploymentsUrl(root),
+      azureModelsUrl(root),
+      azureOpenAiCompatModelsUrl(root),
+    ];
     for (final url in urls) {
       try {
         final response = await _dio.get<Map<String, dynamic>>(
@@ -128,14 +132,11 @@ class OfficialModelCatalogService {
           ),
         );
         final models = parseAzureDeployments(response.data);
-        print('[AzureCatalog] 成功 $url（${models.length}）');
-        return models;
-      } on DioException catch (e) {
-        print(
-          '[AzureCatalog] ${e.response?.statusCode} $url body=${e.response?.data}',
-        );
-      } catch (e) {
-        print('[AzureCatalog] 失敗 $url：$e');
+        if (models.isNotEmpty) {
+          return models;
+        }
+      } catch (_) {
+        // 連線或解析失敗時自動嘗試下一個相容端點
       }
     }
     return const [];
@@ -149,6 +150,11 @@ class OfficialModelCatalogService {
   static String azureModelsUrl(String endpoint) {
     final root = normalizeAzureEndpoint(endpoint);
     return '$root/openai/models?api-version=${AppConstants.defaultAzureApiVersion}';
+  }
+
+  static String azureOpenAiCompatModelsUrl(String endpoint) {
+    final root = normalizeAzureEndpoint(endpoint);
+    return '$root/openai/v1/models';
   }
 
   static Map<String, String> azureApiKeyHeaders(String apiKey) => {
