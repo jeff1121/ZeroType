@@ -64,4 +64,31 @@ void main() {
       'gpt-4o-mini-transcribe',
     ]);
   });
+
+  test('Antigravity 目錄解析 API 回應並過濾內部模型', () {
+    final models = catalog.parseAntigravityModels({
+      'models': {
+        'gemini-3.1-flash-lite': {'displayName': 'Gemini 3.1 Flash Lite'},
+        'gemini-3.6-flash-high': {'displayName': 'Gemini 3.6 Flash (High)'},
+        'tab_flash_lite_preview': {'displayName': 'Tab Internal'},
+        'chat_20706': {'displayName': 'Chat Internal'},
+        'gemini-3-flash': {'displayName': ''},
+      },
+    });
+
+    expect(models.map((m) => m.id).toList(), [
+      'gemini-3.1-flash-lite',
+      'gemini-3.6-flash-high',
+      'gemini-3-flash',
+    ]);
+    expect(models[0].name, 'Gemini 3.1 Flash Lite');
+    expect(models[1].name, 'Gemini 3.6 Flash (High)');
+    expect(models[2].name, 'gemini-3-flash');
+  });
+
+  test('Antigravity 目錄非預期資料回傳空清單', () {
+    expect(catalog.parseAntigravityModels(null), isEmpty);
+    expect(catalog.parseAntigravityModels('invalid'), isEmpty);
+    expect(catalog.parseAntigravityModels({'models': null}), isEmpty);
+  });
 }

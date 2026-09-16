@@ -375,13 +375,63 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ],
-            if (state.channel == SpeechChannel.official) ...[
+            if (state.channel == SpeechChannel.official ||
+                state.channel == SpeechChannel.proxy) ...[
               const Spacer(),
               IconButton(
                 tooltip: '更新模型目錄',
-                onPressed: officialAsync.isLoading
+                onPressed: isLoading
                     ? null
-                    : () => ref.invalidate(officialModelsProvider),
+                    : () async {
+                        if (state.channel == SpeechChannel.official) {
+                          ref.invalidate(officialModelsProvider);
+                          try {
+                            final res = await ref.read(
+                              officialModelsProvider.future,
+                            );
+                            if (!context.mounted) return;
+                            final count = res?.length ?? 0;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('已重新取得模型目錄，共 $count 個可用模型'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('更新模型目錄失敗：$e'),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } else {
+                          ref.invalidate(proxyModelsProvider);
+                          try {
+                            final res = await ref.read(
+                              proxyModelsProvider.future,
+                            );
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '已重新取得 Proxy 模型目錄，共 ${res.length} 個模型',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('更新 Proxy 模型目錄失敗：$e'),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      },
                 icon: const Icon(Icons.refresh, size: 18),
                 visualDensity: VisualDensity.compact,
               ),

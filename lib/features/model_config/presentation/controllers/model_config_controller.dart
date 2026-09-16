@@ -178,13 +178,13 @@ Future<List<AiModel>?> officialModels(Ref ref) async {
       providerId: providerId,
       apiKey: auth.apiKey,
       accessToken: auth.accessToken,
+      projectId: auth.projectId,
       isAntigravity:
           connection.activeCredentialMethod ==
           CredentialMethod.antigravityOauth,
       azureEndpoint: auth.azureEndpoint,
     );
-  } catch (e) {
-    print('[OfficialModels] 目錄查詢失敗：$e');
+  } catch (_) {
     return null;
   }
 }
@@ -193,6 +193,7 @@ Future<
   ({
     String? apiKey,
     String? accessToken,
+    String? projectId,
     String? azureEndpoint,
     String? azureApiVersion,
   })?
@@ -207,6 +208,7 @@ _resolveCatalogAuth(SpeechConnectionState connection) async {
     return (
       apiKey: key,
       accessToken: null,
+      projectId: null,
       azureEndpoint: endpoint,
       azureApiVersion: connection.azureApiVersion,
     );
@@ -218,15 +220,17 @@ _resolveCatalogAuth(SpeechConnectionState connection) async {
       return (
         apiKey: key,
         accessToken: null,
+        projectId: null,
         azureEndpoint: null,
         azureApiVersion: null,
       );
     case CredentialMethod.antigravityOauth:
-      final token = await getIt<AntigravityAuthSource>().readAccessToken();
-      if (token == null) return null;
+      final authData = await getIt<AntigravityAuthSource>().getAuthData();
+      if (authData == null) return null;
       return (
         apiKey: null,
-        accessToken: token,
+        accessToken: authData.accessToken,
+        projectId: authData.projectId,
         azureEndpoint: null,
         azureApiVersion: null,
       );

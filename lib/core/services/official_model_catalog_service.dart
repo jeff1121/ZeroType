@@ -47,9 +47,10 @@ class OfficialModelCatalogService {
     String? accessToken,
     bool isAntigravity = false,
     String? azureEndpoint,
+    String? projectId,
   }) async {
     if (isAntigravity) {
-      return antigravityModels;
+      return _listAntigravity(accessToken: accessToken, projectId: projectId);
     }
     switch (providerId) {
       case 'gemini':
@@ -61,6 +62,82 @@ class OfficialModelCatalogService {
       default:
         return const [];
     }
+  }
+
+  /// 透過 Antigravity API 即時取得目前可用模型列表。
+  Future<List<AiModel>> _listAntigravity({
+    String? accessToken,
+    String? projectId,
+  }) async {
+    if (accessToken == null || accessToken.isEmpty) {
+      return antigravityModels;
+    }
+    final endpoints = [
+      'https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
+      'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
+    ];
+    final payload = {
+      if (projectId != null && projectId.isNotEmpty) 'project': projectId,
+    };
+
+    for (final url in endpoints) {
+      try {
+        final response = await _dio.post<Map<String, dynamic>>(
+          url,
+          data: payload,
+          options: Options(
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+              'User-Agent': 'antigravity/hub/2.2.1 darwin/arm64',
+            },
+          ),
+        );
+        final models = parseAntigravityModels(response.data);
+        if (models.isNotEmpty) {
+          return _uniqueById(models);
+        }
+      } catch (_) {
+        // 嘗試下一個備援端點
+      }
+    }
+    return antigravityModels;
+  }
+
+  /// 解析 Antigravity 模型目錄回應。
+  List<AiModel> parseAntigravityModels(dynamic data) {
+    if (data is! Map) return const [];
+    final modelsRaw = data['models'];
+    final result = <AiModel>[];
+    if (modelsRaw is Map) {
+      for (final entry in modelsRaw.entries) {
+        final id = entry.key.toString().trim();
+        if (id.isEmpty) continue;
+        if (id.startsWith('tab_') || id.startsWith('chat_')) continue;
+        String? displayName;
+        if (entry.value is Map) {
+          displayName = entry.value['displayName']?.toString().trim();
+        }
+        final name = (displayName != null && displayName.isNotEmpty)
+            ? displayName
+            : id;
+        result.add(AiModel(id: id, name: name));
+      }
+    } else if (modelsRaw is List) {
+      for (final item in modelsRaw.whereType<Map>()) {
+        final id = (item['id'] ?? item['name'])?.toString().trim() ?? '';
+        if (id.isEmpty) continue;
+        if (id.startsWith('tab_') || id.startsWith('chat_')) continue;
+        final displayName = item['displayName']?.toString().trim();
+        final name = (displayName != null && displayName.isNotEmpty)
+            ? displayName
+            : id;
+        result.add(AiModel(id: id, name: name));
+      }
+    }
+    return result;
   }
 
   Future<List<AiModel>> _listGemini({
