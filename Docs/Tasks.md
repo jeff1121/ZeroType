@@ -314,8 +314,9 @@
 - [x] Provider 列新增 `Azure`（label 直接叫「Azure」）
 - [x] 選 Azure 後，通道只顯示「官方」（隱藏 Proxy 並強制 `SpeechChannel.official`）
 - [x] 憑證區改為 Azure 專用三欄（皆必填）：**Service Endpoint**、**API Key（Access Token）**、**API Version**
-- [x] 「更新模型目錄」可用：呼叫 Azure 部署清單 API，直接列出部署（不過濾），使用者選其一（即 Whisper 部署）
-- [x] 查不到部署時提供「手動輸入部署名稱」fallback，仍可完成轉寫
+- [x] 預設提供 `OpenAI Whisper (whisper)` 模型選項，亦可點擊「更新模型目錄」向 Azure 查詢可用部署與模型
+- [x] 隨時提供「手動指定自訂部署名稱」入口，即使企業有自訂部署名稱也能直接填寫並使用
+- [x] 查不到部署時自動退回內建清單或提供手動輸入，絕不阻塞轉寫設定
 
 ### 9.2 技術細節（已查證）
 - 轉寫：`POST {endpoint}/openai/deployments/{deployment}/audio/transcriptions?api-version={apiVersion}`
@@ -330,7 +331,7 @@
 
 ### 9.3 實作任務（依序）
 **Phase 1 — 資料與狀態層**
-- [x] `assets/config/providers.json` 新增 `azure` provider（`models` 留空，靠 refresh / 手動輸入）
+- [x] `assets/config/providers.json` 新增 `azure` provider（提供預設 OpenAI Whisper 模型，亦支援 refresh 與手動自訂部署名稱）
 - [x] `app_constants.dart` 新增 `azureEndpointKey`、`azureApiVersionKey`（per-provider）
 - [x] `speech_connection.dart`：新增 `azureEndpoint`、`azureApiVersion` 欄位；`isAzure` 判斷；`isReady` 的 azure 分支（需 endpoint + apiKey + apiVersion + model 皆備）；提供「每 provider 允許通道」
 - [x] `model_config_repository(.dart / _impl)`：azure endpoint / api-version 存取
