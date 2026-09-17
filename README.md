@@ -16,9 +16,9 @@
 - 按下 `Esc` 或點擊取消按鈕可中止錄音
 
 ### 🧠 AI 驅動的語音辨識
-- 支援 **OpenAI**（`gpt-4o-transcribe`）與 **Google Gemini**（`gemini-*`）兩大語音辨識後端
+- 支援 **OpenAI**（`gpt-4o-transcribe`）、**Google Gemini**（`gemini-*`）與 **Azure OpenAI Whisper** 三種語音辨識後端
 - 辨識完成後，結果自動貼至游標所在位置（模擬 `⌘V`）
-- 支援自訂 API Endpoint（可使用 OpenAI-compatible 的第三方服務）
+- 支援官方 / Proxy 雙通道，以及自訂 Proxy 根位址（可使用 OpenAI-compatible 的第三方服務）
 
 ### 🇹🇼 針對繁體中文深度優化的提示詞
 內建的轉錄提示詞針對台灣使用情境做了以下優化：
@@ -59,6 +59,7 @@
 前往以下任一服務申請 API Key：
 - [OpenAI](https://platform.openai.com/api-keys)（支援 Transcribe 語音辨識）
 - [Google AI Studio](https://aistudio.google.com/app/apikey)（支援 Gemini 多模態）
+- [Azure OpenAI](https://learn.microsoft.com/azure/ai-foundry/openai/overview)（支援 Whisper 部署；需自行填寫 Service Endpoint、API Key、API Version）
 
 ---
 
@@ -110,7 +111,36 @@ flutter run -d macos
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.3.0] - 當前版本
+### [v1.5.2] - 當前版本
+- **macOS 安裝檔改用自簽章憑證正式簽署** 🔐
+  - 建置流程改以自簽章程式碼簽署憑證（Common Name: `ZeroType`）簽署 App，取代先前完全沒有身分資訊的 ad-hoc 簽章。
+  - Gatekeeper 評估結果會顯示 `origin=ZeroType`，開啟時走「無法驗證開發者」流程，於「系統設定 → 隱私權與安全性」按一次「仍要打開」即可執行。
+  - 這是自簽章憑證，並非 Apple 官方核發的 Developer ID，也未經 notarization；第一次開啟仍需手動允許。
+- **修正選單列狀態圖示** 🎨
+  - 修復 macOS 選單列常駐圖示顯示為黑白破圖案的問題，改為正確的紅底白色麥克風圖示。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.5.2+8`。
+
+### [v1.5.1]
+- **修復 Antigravity 即時模型目錄刷新** 🔄
+  - 修復 Gemini 官方 / Antigravity OAuth 點擊 Refresh 時未實際發出網路請求、僅回傳固定清單的問題。
+  - 接通 Antigravity `v1internal:fetchAvailableModels`，以 Project ID 與 Access Token 取得最新可用模型，並過濾非轉寫的內部程式碼補全模型。
+  - 斷線或未取得清單時，自動退回預設清單。
+- **重新整理即時狀態回饋** 💬
+  - 更新模型目錄時顯示載入指示器；完成後以 SnackBar 回饋取得數量或錯誤原因。
+  - 同步支援 Proxy 通道的即時模型重新整理。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.5.1+7`。
+
+### [v1.5.0]
+- **Azure 模型選擇與自訂部署** 🟦
+  - 新增內建 `OpenAI Whisper (whisper)` 選項，尚未取得即時目錄時可供選擇。
+  - 目錄查詢依序嘗試 `/openai/deployments`、`/openai/models` 與 `/openai/v1/models`；失敗或結果為空時改試下一個端點。
+  - 清單有資料時仍可切換「手動指定自訂部署名稱」；已儲存但不在目前目錄中的選項會保留。
+- **版本提升** 🏷️
+  - 軟體版本更新為 `1.5.0+6`。
+
+### [v1.3.0]
 - **Azure OpenAI Whisper 語音辨識** 🟦
   - 新增 Azure 作為第三個語音辨識 Provider（僅官方通道）。
   - 必填 Service Endpoint、API Key、API Version；部署清單可 refresh，失敗時可手動輸入部署名稱。

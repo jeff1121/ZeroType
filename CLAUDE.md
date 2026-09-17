@@ -123,6 +123,14 @@ Windows 由 `windows/runner/channel_handler.cpp` 用 `SendInput` 實作 Ctrl+V�
 
 不要手改 `*.g.dart`、`*.freezed.dart` 或 `*.gr.dart`。這些產生檔有進版控，改 Riverpod annotation、Freezed model 或 AutoRoute 宣告後要跑 build_runner，並把產生出來的 diff 一併提交。
 
+發布版本時必須同時更新這三處，缺一不可：
+
+1. `pubspec.yaml` 的 `version`（語意化版本 + build number）
+2. `RELEASE_NOTES.md`（GitHub Actions 會把它當成 Release body）
+3. `README.md` 的「版本更新紀錄」：把新版標成「當前版本」，並寫入該版重點
+
+GitHub 專案首頁渲染的是 README，不是 Releases 頁。v1.3.0 之後曾只更新 `RELEASE_NOTES.md`，導致首頁仍顯示 v1.3.0 為當前版本；這是嚴重的文件疏漏，之後不可再犯。沒有獨立的 v1.4.x tag。
+
 `.agents/rules/flutter-desktop.md` 其餘仍適用的重點：
 
 - 識別碼、型別與檔名用英文：class 用 PascalCase、成員用 camelCase、檔案與目錄用 snake_case。

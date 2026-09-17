@@ -357,3 +357,15 @@
 - Whisper 為每分鐘計價，現有成本統計為 token 制 → Azure 轉寫成本可能顯示空白（可接受，日後再補 duration 計價）
 - Token 型別預設當 **api-key**（Azure「Keys & Endpoint」金鑰）；若日後需 AAD，改送 `Authorization: Bearer`
 - 完成後推送並開 PR 交 Owner 審核
+
+---
+
+## 🚨 十、README 版本更新紀錄未同步（嚴重文件疏漏）
+
+> 發現時間：2026-09-17。GitHub 專案首頁（README）的「版本更新紀錄」停在 **v1.3.0**，但實際已發布 **v1.5.0 / v1.5.1 / v1.5.2**（`pubspec.yaml` 為 `1.5.2+8`）。沒有 v1.4.x tag。
+
+- **現象**：訪客在 GitHub 第一頁看到的當前版本仍是 v1.3.0；Releases 頁與 `RELEASE_NOTES.md` 已是 v1.5.2。
+- **原因**：發布流程只更新 `pubspec.yaml` 與 `RELEASE_NOTES.md`（CI 用後者當 Release body），沒有同步 `README.md` 的版本更新紀錄。
+- **處理**：
+  - [x] 於 `README.md` 補齊 v1.5.0、v1.5.1、v1.5.2，並將「當前版本」改為 v1.5.2
+  - [x] 於 `CLAUDE.md` 寫入發布文件三處同步規則，避免再犯
