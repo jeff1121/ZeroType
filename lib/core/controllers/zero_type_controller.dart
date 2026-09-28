@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/constants/model_pricing.dart';
@@ -42,7 +43,7 @@ class ZeroTypeController extends _$ZeroTypeController {
   }
 
   Future<void> toggleRecording() async {
-    print(
+    debugPrint(
       '[ZeroTypeController] Hotkey triggered! Current status: ${state.status}',
     );
     if (state.status == ZeroTypeStatus.recording) {
@@ -114,8 +115,8 @@ class ZeroTypeController extends _$ZeroTypeController {
             .catchError((_) => false),
         _recordingService.requestPermission().catchError((_) => false),
       ]);
-      isAccessibilityOk = results[0] as bool;
-      hasPermission = results[1] as bool;
+      isAccessibilityOk = results[0];
+      hasPermission = results[1];
     } catch (_) {}
 
     if (!ref.mounted || _cancelled) return;
@@ -156,7 +157,7 @@ class ZeroTypeController extends _$ZeroTypeController {
         1;
     _maxDurationTimer = Timer(Duration(minutes: maxMinutes), () {
       if (state.status == ZeroTypeStatus.recording) {
-        print('[ZeroType] Max recording duration reached, auto-stopping.');
+        debugPrint('[ZeroType] Max recording duration reached, auto-stopping.');
         _stopAndProcess();
       }
     });
@@ -339,7 +340,7 @@ class ZeroTypeController extends _$ZeroTypeController {
       await Clipboard.setData(ClipboardData(text: result.text));
       await Future.delayed(const Duration(milliseconds: 150));
 
-      print('[ZeroType] Simulating paste...');
+      debugPrint('[ZeroType] Simulating paste...');
       const channel = MethodChannel('com.zerotype.app/keyboard');
       await channel.invokeMethod('simulatePaste');
 
@@ -351,7 +352,7 @@ class ZeroTypeController extends _$ZeroTypeController {
         await _hideNativeOverlay();
       }
     } catch (e, st) {
-      print('[ZeroType] ERROR in _stopAndProcess: $e\n$st');
+      debugPrint('[ZeroType] ERROR in _stopAndProcess: $e\n$st');
       if (!ref.mounted || _cancelled) return;
       state = state.copyWith(
         status: ZeroTypeStatus.error,

@@ -29,7 +29,6 @@ class AppTheme {
         primary: primaryOrange,
         surface: isDark ? _darkSurface : _lightSurface,
         onSurface: isDark ? _darkOnSurface : _lightOnSurface,
-        background: isDark ? _darkBackground : _lightBackground,
       ),
       scaffoldBackgroundColor: isDark ? _darkBackground : _lightBackground,
       fontFamily: 'SF Pro Display',
@@ -38,7 +37,7 @@ class AppTheme {
         backgroundColor: isDark ? _darkSurface : _lightSurface,
         selectedIconTheme: const IconThemeData(color: primaryOrange),
         unselectedIconTheme: IconThemeData(
-          color: (isDark ? _darkOnSurface : _lightOnSurface).withOpacity(0.5),
+          color: (isDark ? _darkOnSurface : _lightOnSurface).withAlpha(128),
         ),
         selectedLabelTextStyle: const TextStyle(
           color: primaryOrange,
@@ -46,13 +45,13 @@ class AppTheme {
           fontSize: 12,
         ),
         unselectedLabelTextStyle: TextStyle(
-          color: (isDark ? _darkOnSurface : _lightOnSurface).withOpacity(0.5),
+          color: (isDark ? _darkOnSurface : _lightOnSurface).withAlpha(128),
           fontSize: 12,
         ),
       ),
       dividerTheme: DividerThemeData(
         thickness: 1,
-        color: (isDark ? _darkOnSurface : _lightOnSurface).withOpacity(0.1),
+        color: (isDark ? _darkOnSurface : _lightOnSurface).withAlpha(26),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -65,7 +64,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: (isDark ? _darkSurface : _lightSurface).withOpacity(0.5),
+        fillColor: (isDark ? _darkSurface : _lightSurface).withAlpha(128),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

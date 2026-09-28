@@ -100,7 +100,7 @@ class _PageHeader extends StatelessWidget {
             icon: const Icon(Icons.delete_sweep_outlined, size: 16),
             label: const Text('全部清除'),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red.withOpacity(0.8),
+              foregroundColor: Colors.red.withAlpha(204),
               visualDensity: VisualDensity.compact,
             ),
           ),
@@ -148,17 +148,17 @@ class _HistoryList extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.onSurface.withOpacity(0.1)),
+        border: Border.all(color: cs.onSurface.withAlpha(26)),
       ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: records.length,
-        separatorBuilder: (_, __) => Divider(
+        separatorBuilder: (_, _) => Divider(
           height: 1,
           indent: 16,
           endIndent: 16,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
         ),
         itemBuilder: (context, index) => _HistoryItem(record: records[index]),
       ),
@@ -229,7 +229,7 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
             elevation: 12,
             borderRadius: BorderRadius.circular(14),
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            shadowColor: Colors.black.withOpacity(0.25),
+            shadowColor: Colors.black.withAlpha(64),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxHeight: popupMaxHeight),
               child: Scrollbar(
@@ -310,7 +310,7 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
                   Text(
                     _formatDateTime(record.createdAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: cs.onSurface.withOpacity(0.45),
+                      color: cs.onSurface.withAlpha(115),
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -367,7 +367,7 @@ class _HistoryItemState extends ConsumerState<_HistoryItem> {
               _ActionIcon(
                 icon: Icons.delete_outline,
                 tooltip: '刪除',
-                color: Colors.red.withOpacity(0.7),
+                color: Colors.red.withAlpha(179),
                 onTap: () => ref
                     .read(historyControllerProvider.notifier)
                     .deleteRecord(record.id),
@@ -412,8 +412,8 @@ class _TokenInfoRow extends StatelessWidget {
         : '';
     final parts = [
       providerName,
-      if (channelName != null) channelName,
-      if (credentialName != null) credentialName,
+      ?channelName,
+      ?credentialName,
       modelName,
       'in: ${record.inputTokens} / out: ${record.outputTokens}',
       if (costStr.isNotEmpty) costStr,
@@ -422,7 +422,7 @@ class _TokenInfoRow extends StatelessWidget {
     return Text(
       parts.join(' · '),
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(102),
       ),
     );
   }
@@ -454,8 +454,7 @@ class _ActionIcon extends StatelessWidget {
             icon,
             size: 17,
             color:
-                color ??
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color ?? Theme.of(context).colorScheme.onSurface.withAlpha(128),
           ),
         ),
       ),
@@ -481,24 +480,20 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.history_outlined,
               size: 56,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(51),
             ),
             const SizedBox(height: 16),
             Text(
               '尚無轉寫記錄',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withOpacity(0.35),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(89),
               ),
             ),
             const SizedBox(height: 6),
             Text(
               '完成一次語音辨識後，記錄將會顯示在這裡',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withOpacity(0.25),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(64),
               ),
             ),
           ],
@@ -532,18 +527,18 @@ class _StatsSummaryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.onSurface.withOpacity(0.08)),
+          border: Border.all(color: cs.onSurface.withAlpha(20)),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.35)
-                  : Colors.black.withOpacity(0.08),
+                  ? Colors.black.withAlpha(89)
+                  : Colors.black.withAlpha(20),
               blurRadius: 20,
               spreadRadius: 0,
               offset: const Offset(0, 4),
             ),
             BoxShadow(
-              color: cs.primary.withOpacity(0.04),
+              color: cs.primary.withAlpha(10),
               blurRadius: 12,
               spreadRadius: 0,
               offset: const Offset(0, 2),
@@ -565,7 +560,7 @@ class _StatsSummaryCard extends StatelessWidget {
                 thickness: 1,
                 indent: 16,
                 endIndent: 16,
-                color: cs.onSurface.withOpacity(0.1),
+                color: cs.onSurface.withAlpha(26),
               ),
               Expanded(
                 child: _StatCell(
@@ -601,7 +596,7 @@ class _StatCell extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
             letterSpacing: 0.3,
           ),
         ),

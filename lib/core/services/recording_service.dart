@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
@@ -35,7 +36,7 @@ class RecordingService {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     _currentFilePath = '${dir.path}/zerotype_$timestamp.m4a';
 
-    print('[RecordingService] starting at $_currentFilePath');
+    debugPrint('[RecordingService] starting at $_currentFilePath');
     await _recorder.start(
       const RecordConfig(
         encoder: AudioEncoder.aacLc,
@@ -46,7 +47,7 @@ class RecordingService {
     );
 
     final isRec = await _recorder.isRecording();
-    print('[RecordingService] isRecording after start: $isRec');
+    debugPrint('[RecordingService] isRecording after start: $isRec');
 
     if (onAmplitude != null) {
       _amplitudeSubscription = _recorder
@@ -66,19 +67,21 @@ class RecordingService {
     _amplitudeSubscription = null;
 
     final isRec = await _recorder.isRecording();
-    print('[RecordingService] calling _recorder.stop()... isRecording=$isRec');
+    debugPrint(
+      '[RecordingService] calling _recorder.stop()... isRecording=$isRec',
+    );
     if (!isRec) {
       // Recorder never started (e.g. file path invalid) — skip stop() to avoid hang.
-      print('[RecordingService] recorder not active, skipping stop()');
+      debugPrint('[RecordingService] recorder not active, skipping stop()');
       return _currentFilePath;
     }
     try {
       await _recorder.stop().timeout(const Duration(seconds: 8));
-      print(
+      debugPrint(
         '[RecordingService] _recorder.stop() completed. path=$_currentFilePath',
       );
     } catch (e) {
-      print('[RecordingService] _recorder.stop() error/timeout: $e');
+      debugPrint('[RecordingService] _recorder.stop() error/timeout: $e');
     }
     return _currentFilePath;
   }
@@ -92,7 +95,7 @@ class RecordingService {
       try {
         await _recorder.stop().timeout(const Duration(seconds: 8));
       } catch (e) {
-        print('[RecordingService] cancelRecording stop error: $e');
+        debugPrint('[RecordingService] cancelRecording stop error: $e');
       }
     }
     await _deleteCurrentFile();

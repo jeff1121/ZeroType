@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/features/history/domain/entities/history_stats.dart';
@@ -103,7 +103,7 @@ class HistoryController extends _$HistoryController {
         ]);
       }
     } catch (e) {
-      print('[HistoryController] revealInFinder error: $e');
+      debugPrint('[HistoryController] revealInFinder error: $e');
     }
   }
 

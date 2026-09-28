@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +25,9 @@ class PromptRepositoryImpl implements PromptRepository {
       );
       return content.trim();
     } catch (e) {
-      print('[PromptRepo] ERROR loading SpeechToText.prompt from assets: $e');
+      debugPrint(
+        '[PromptRepo] ERROR loading SpeechToText.prompt from assets: $e',
+      );
     }
     return '請將語音精確轉換成繁體中文，並依語意加上適當的標點符號。';
   }
@@ -38,7 +41,7 @@ class PromptRepositoryImpl implements PromptRepository {
         if (content.isNotEmpty) return content;
       }
     } catch (e) {
-      print('[PromptRepo] Error reading custom prompt: $e');
+      debugPrint('[PromptRepo] Error reading custom prompt: $e');
     }
     return await getDefaultSpeechPrompt();
   }
@@ -50,7 +53,7 @@ class PromptRepositoryImpl implements PromptRepository {
       final file = await _getCustomPromptFile();
       await file.writeAsString(cleaned, flush: true);
     } catch (e) {
-      print('[PromptRepo] Error saving custom prompt: $e');
+      debugPrint('[PromptRepo] Error saving custom prompt: $e');
     }
     await _prefs.setString(AppConstants.speechPromptKey, cleaned);
     return cleaned;
@@ -62,7 +65,7 @@ class PromptRepositoryImpl implements PromptRepository {
       final file = await _getCustomPromptFile();
       if (await file.exists()) await file.delete();
     } catch (e) {
-      print('[PromptRepo] Error deleting custom prompt: $e');
+      debugPrint('[PromptRepo] Error deleting custom prompt: $e');
     }
     await _prefs.remove(AppConstants.speechPromptKey);
     return await getDefaultSpeechPrompt();

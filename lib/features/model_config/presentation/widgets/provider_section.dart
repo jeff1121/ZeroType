@@ -164,7 +164,7 @@ class _ProviderSectionState extends State<ProviderSection>
               Switch(
                 value: widget.isEnabled,
                 onChanged: widget.onToggleEnabled,
-                activeColor: colorScheme.primary,
+                activeThumbColor: colorScheme.primary,
               )
             else
               Icon(
@@ -244,7 +244,7 @@ class _ProviderSectionState extends State<ProviderSection>
     if (selectedProvider == null) return const SizedBox.shrink();
 
     return DropdownButtonFormField<String>(
-      value: widget.selectedModelId?.isEmpty == true
+      initialValue: widget.selectedModelId?.isEmpty == true
           ? null
           : widget.selectedModelId,
       decoration: InputDecoration(

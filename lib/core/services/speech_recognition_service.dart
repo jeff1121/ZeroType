@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 
 typedef TranscriptionResult = ({
@@ -29,7 +30,7 @@ class SpeechRecognitionService {
     String? azureEndpoint,
     String? azureApiVersion,
   }) async {
-    print(
+    debugPrint(
       '[SpeechRecognition] Transcribing with $provider ($model) via ${channel.id}${isAntigravity ? " (Antigravity Direct)" : ""}',
     );
 
@@ -218,7 +219,7 @@ class SpeechRecognitionService {
     required String model,
     required String prompt,
   }) async {
-    print('[AntigravityDirect] Start transcription: $audioFilePath');
+    debugPrint('[AntigravityDirect] Start transcription: $audioFilePath');
     final fileToUpload = File(audioFilePath);
     if (!fileToUpload.existsSync()) {
       throw Exception('找不到音檔：$audioFilePath');
@@ -291,7 +292,7 @@ class SpeechRecognitionService {
         final inputTokens = usageMeta?['promptTokenCount'] as int?;
         final outputTokens = usageMeta?['candidatesTokenCount'] as int?;
 
-        print('[AntigravityDirect] Success! text: $text');
+        debugPrint('[AntigravityDirect] Success! text: $text');
         return (
           text: text,
           inputTokens: inputTokens,
@@ -299,7 +300,9 @@ class SpeechRecognitionService {
         );
       } on DioException catch (e) {
         lastErr = e;
-        print('[AntigravityDirect] Failed on $url: ${e.response?.statusCode}');
+        debugPrint(
+          '[AntigravityDirect] Failed on $url: ${e.response?.statusCode}',
+        );
       }
     }
     throw lastErr ?? Exception('Antigravity 端點連線失敗');
@@ -314,7 +317,7 @@ class SpeechRecognitionService {
     String? accessToken,
     String? proxyRoot,
   }) async {
-    print('[Gemini] Start direct transcription: $audioFilePath');
+    debugPrint('[Gemini] Start direct transcription: $audioFilePath');
 
     final fileToUpload = File(audioFilePath);
     if (!fileToUpload.existsSync()) {
@@ -380,11 +383,11 @@ class SpeechRecognitionService {
       final inputTokens = usageMeta?['promptTokenCount'] as int?;
       final outputTokens = usageMeta?['candidatesTokenCount'] as int?;
 
-      print('[Gemini] Success! tokens: in=$inputTokens out=$outputTokens');
+      debugPrint('[Gemini] Success! tokens: in=$inputTokens out=$outputTokens');
       return (text: text, inputTokens: inputTokens, outputTokens: outputTokens);
     } on DioException catch (e) {
-      print('[Gemini] DioException: ${e.message}');
-      print('[Gemini] Status: ${e.response?.statusCode}');
+      debugPrint('[Gemini] DioException: ${e.message}');
+      debugPrint('[Gemini] Status: ${e.response?.statusCode}');
       rethrow;
     }
   }
