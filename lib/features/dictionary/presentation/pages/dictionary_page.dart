@@ -170,7 +170,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
       ),
       child: ListView.separated(
         itemCount: words.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             Divider(height: 1, color: colorScheme.onSurface.withAlpha(20)),
         itemBuilder: (context, index) {
           final word = words[index];

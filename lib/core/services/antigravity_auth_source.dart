@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 /// 包含 Antigravity 憑證與關聯的 Project ID。
 typedef AntigravityAuthData = ({String accessToken, String projectId});
@@ -346,7 +347,7 @@ class AntigravityAuthSource {
       if (json is Map) return Map<String, dynamic>.from(json);
       return null;
     } catch (e) {
-      print('[AntigravityAuth] 讀取本機登入失敗：$e');
+      debugPrint('[AntigravityAuth] 讀取本機登入失敗：$e');
       return null;
     }
   }
@@ -393,7 +394,7 @@ class AntigravityAuthSource {
       final data = response.data;
       final access = data?['access_token'] as String?;
       if (access == null || access.isEmpty) {
-        print('[AntigravityAuth] 更新授權失敗：回應沒有 access_token');
+        debugPrint('[AntigravityAuth] 更新授權失敗：回應沒有 access_token');
         return null;
       }
       final expiresIn = data?['expires_in'];
@@ -418,7 +419,7 @@ class AntigravityAuthSource {
       await file.writeAsString(jsonEncode(current));
       return (accessToken: access, projectId: projectId);
     } catch (e) {
-      print('[AntigravityAuth] 更新授權失敗：$e');
+      debugPrint('[AntigravityAuth] 更新授權失敗：$e');
       return null;
     }
   }

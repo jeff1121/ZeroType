@@ -11,7 +11,7 @@
 ## ✨ 功能特色
 
 ### 🎙️ 全局快捷鍵錄音
-- 自訂全局快捷鍵（預設 `⌥ Option + Space`），在任何應用程式中觸發錄音
+- 自訂全局快捷鍵（macOS 預設 `⌥ Option + Space`；Windows 預設 `Ctrl + Shift + Space`），在其他應用程式中觸發錄音
 - 錄音中顯示浮動音波 Overlay，提供即時視覺回饋
 - 按下 `Esc` 或點擊取消按鈕可中止錄音
 
@@ -40,7 +40,7 @@
 ### ⚙️ 設定頁面
 - 深色 / 淺色模式切換
 - 開機自動啟動
-- 快捷鍵自訂（支援任意組合鍵）
+- 快捷鍵自訂；Windows 需包含修飾鍵，主鍵支援字母、數字、Space、Escape、F1–F12，並排除系統保留組合
 - 麥克風權限與輔助使用權限狀態即時顯示
 
 ---
@@ -111,7 +111,33 @@ flutter run -d macos
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.5.2] - 當前版本
+### [v1.5.3] - 當前版本
+- **Windows 原生視窗框與系統匣關閉行為**
+  - Windows 改用系統標題列「ZeroType」，提供拖移、調整大小、最小化、最大化與關閉，不再疊加內容區的 44px 假標題。
+  - 兩個桌面平台都攔截關閉並隱藏主視窗；真正退出仍由系統匣「結束 ZeroType」處理。
+  - macOS 保留隱藏標題列、交通燈與 44px「Zero Type」標題，不改 macOS 原生 runner。
+- **Windows 全域熱鍵可靠註冊**
+  - 預設改為 `Ctrl+Shift+Space`，舊的 Windows 保留組合自動退回平台預設；macOS 保留 `⌥ Option+Space` 與 `hotkey_manager`。
+  - Windows 改走 App 自有 `RegisterHotKey` channel，檢查回傳值與 `GetLastError`，加上 `MOD_NOREPEAT`，並透過 EventChannel 傳遞已註冊熱鍵的觸發事件。
+  - 修正 Windows CI 發現的 C++ 區域變數遮蔽（MSVC C4456／C2220），保留警告視為錯誤的嚴格編譯門檻。
+  - 拒絕沒有修飾鍵、Alt+Space、Alt+F4、Ctrl+Esc、含 Ctrl+Alt+Delete 與未支援主鍵；註冊被占用時顯示繁體中文原因與可用的錯誤碼，不再靜默宣稱成功。
+- **熱鍵儲存／取消／失敗回復**
+  - 修正錄製時暫停全域熱鍵後，儲存卻未恢復註冊的缺陷。候選組合必須註冊成功才更新目前熱鍵與 `global_hotkey` 設定。
+  - 新鍵註冊或設定寫入失敗時恢復舊鍵；舊鍵也無法恢復則明示失敗並保持暫停，避免顯示假成功。
+  - 沿用既有 `HotKey` JSON 格式，保留 macOS 已儲存的合法組合與修飾鍵資訊。
+- **設定頁與 macOS 回歸修復**
+  - 修正主視窗提前監聽設定狀態造成的初始化競爭，以及只先給預設值仍可能顯示過時熱鍵的問題；設定頁等待同一個初始化工作完成。
+  - 設定載入失敗會顯示原因與重試按鈕，不再只有空白卡片。
+  - 錄製覆蓋層遮住整個視窗，以 `HardwareKeyboard` 接收按鍵並在卸載時移除 handler；切回視窗不重置錄製，Esc 可取消。
+  - 修正最小 700×500 視窗下長組合溢出、覆蓋層關閉時錯誤訊息消失，以及 Release 模式依賴 `debugName` 導致按鍵標籤失真的問題。
+- **驗證與文件可信度**
+  - 移除先前為取得全綠而加入的 analyzer 忽略規則，實際清理 lint；不變更錄音、轉寫、貼上、Azure 或 Antigravity 的業務流程。
+  - 補上真實 SettingsController / MainShell 整合、註冊器 channel、回滾與初始化競爭測試，修正假註冊器讓回滾測試誤過的問題。PR 加入格式、分析、測試與 Windows 編譯檢查。
+  - 使用者已回報先前自簽 macOS 測試版人工測試完成、未發現重大問題；本次複查新增修正另以自動化測試驗證。Windows 實機 11 項清單仍未有逐項驗證紀錄，不以 widget 平台模擬或 CI 編譯取代實測。
+  - 詳細缺陷、測試證據與未驗證範圍見 [本次複查報告](Docs/Windows-Hotkey-Audit.md) 及 [工作清單第十一節](Docs/Tasks.md)。
+- **版本提升**：`1.5.2+8` → `1.5.3+9`。macOS 延續 `ZeroType` 自簽憑證流程；這不等於 Apple Developer ID 或 notarization。
+
+### [v1.5.2]
 - **macOS 安裝檔改用自簽章憑證正式簽署** 🔐
   - 建置流程改以自簽章程式碼簽署憑證（Common Name: `ZeroType`）簽署 App，取代先前完全沒有身分資訊的 ad-hoc 簽章。
   - Gatekeeper 評估結果會顯示 `origin=ZeroType`，開啟時走「無法驗證開發者」流程，於「系統設定 → 隱私權與安全性」按一次「仍要打開」即可執行。

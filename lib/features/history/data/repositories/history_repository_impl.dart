@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/entities/history_stats.dart';
@@ -45,7 +46,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       records.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return records;
     } catch (e) {
-      print('[HistoryRepository] Failed to parse history.json: $e');
+      debugPrint('[HistoryRepository] Failed to parse history.json: $e');
       return [];
     }
   }
@@ -118,7 +119,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         .where((r) => r.createdAt.isAfter(cutoff) || r.createdAt == cutoff)
         .toList();
     await _saveRecords(remaining);
-    print('[HistoryRepository] Purged ${expired.length} expired records.');
+    debugPrint('[HistoryRepository] Purged ${expired.length} expired records.');
   }
 
   @override

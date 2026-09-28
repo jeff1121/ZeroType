@@ -250,7 +250,7 @@ class _AnimatedDotsState extends State<_AnimatedDots>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (_, __) {
+      builder: (_, _) {
         final dotCount = (_ctrl.value * 3).floor() + 1;
         return Text(
           '.' * dotCount,

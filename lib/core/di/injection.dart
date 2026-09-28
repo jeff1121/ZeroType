@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../hotkey/global_hotkey_registrar.dart';
 import '../services/antigravity_auth_source.dart';
 import '../services/antigravity_oauth_service.dart';
 import '../services/official_model_catalog_service.dart';
@@ -41,8 +43,16 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<SpeechRecognitionService>(
     SpeechRecognitionService(dio: dio),
   );
+
+  // 依平台注入對應的全域熱鍵註冊器
+  final GlobalHotkeyRegistrar hotkeyRegistrar =
+      defaultTargetPlatform == TargetPlatform.windows
+      ? WindowsHotkeyRegistrar()
+      : MacosHotkeyRegistrar();
+  getIt.registerSingleton<GlobalHotkeyRegistrar>(hotkeyRegistrar);
+
   getIt.registerSingleton<HotkeyService>(
-    HotkeyService(prefs: sharedPreferences),
+    HotkeyService(prefs: sharedPreferences, registrar: hotkeyRegistrar),
   );
   getIt.registerSingleton<TrayService>(TrayService());
   getIt.registerSingleton<SoundService>(SoundService(prefs: sharedPreferences));

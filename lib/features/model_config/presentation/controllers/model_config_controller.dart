@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/services/antigravity_auth_source.dart';
@@ -155,7 +156,7 @@ Future<List<AiModel>> proxyModels(Ref ref) async {
       apiKey: connection.proxyApiKey ?? '',
     );
   } catch (e) {
-    print('[ProxyModels] 目錄查詢失敗：$e');
+    debugPrint('[ProxyModels] 目錄查詢失敗：$e');
     return const [];
   }
 }
