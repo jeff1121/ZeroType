@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:zero_type/core/di/injection.dart';
+import 'package:zero_type/core/hotkey/hotkey_combo.dart';
+import 'package:zero_type/core/hotkey/global_hotkey_registrar.dart';
 import 'package:zero_type/core/services/sound_service.dart';
 import 'package:zero_type/core/theme/theme_controller.dart';
 import '../controllers/settings_controller.dart';
@@ -22,8 +24,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Force a full rebuild when page is first shown
-    WidgetsBinding.instance.addPostFrameCallback((_) => _invalidateSettings());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _refreshPermissionsIfNeeded(),
+    );
   }
 
   @override
@@ -34,22 +37,52 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Fires when user returns from System Preferences
     if (state == AppLifecycleState.resumed) {
-      _invalidateSettings();
+      _refreshPermissionsIfNeeded();
     }
   }
 
   @override
-  void didPush() => _invalidateSettings();
+  void didPush() => _refreshPermissionsIfNeeded();
 
   @override
-  void didPopNext() => _invalidateSettings();
+  void didPopNext() => _refreshPermissionsIfNeeded();
 
-  void _invalidateSettings() {
-    // Invalidating forces the provider to call build() from scratch,
-    // ensuring we always get fresh permission states from the OS.
-    ref.invalidate(settingsControllerProvider);
+  Future<void> _refreshPermissionsIfNeeded() async {
+    if (!mounted) return;
+    final data = ref.read(settingsControllerProvider).value;
+    if (data == null || data.isRecordingHotkey) return;
+    try {
+      await ref.read(settingsControllerProvider.notifier).refreshPermissions();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('權限狀態更新失敗：$error')));
+    }
+  }
+
+  Future<void> _startHotkeyRecording() async {
+    final result = await ref
+        .read(settingsControllerProvider.notifier)
+        .startRecordingHotkey();
+    if (!mounted) return;
+    if (result is HotkeyRegistrationFailure) {
+      // 暫停及恢復同時失敗時，恢復遮罩仍在；錯誤必須顯示於遮罩之上。
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('無法開始錄製快捷鍵'),
+          content: Text(result.message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('知道了'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -57,15 +90,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
     final themeMode = ref.watch(themeControllerProvider);
     final isDark = themeMode == ThemeMode.dark;
     final settings = ref.watch(settingsControllerProvider);
-
-    // Once the controller finishes its initial async build, immediately
-    // re-invalidate to snapshot the freshest OS permission state.
-    ref.listen(settingsControllerProvider, (previous, next) {
-      if (previous?.isLoading == true && next.hasValue) {
-        // Don't invalidate again here — build() already fetched fresh permissions.
-        // This listener is kept only for future extensibility.
-      }
-    });
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -88,6 +112,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                   ),
                 ),
                 const SizedBox(height: 32),
+                if (settings.hasError)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('設定載入失敗：${settings.error}'),
+                          const SizedBox(height: 8),
+                          FilledButton(
+                            onPressed: () =>
+                                ref.invalidate(settingsControllerProvider),
+                            child: const Text('重試'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // --- General Settings Section ---
                 _SectionHeader(title: '一般設定'),
@@ -124,7 +166,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                     const Divider(height: 1, indent: 56),
                     // History Retention Days
@@ -149,7 +191,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                     const Divider(height: 1, indent: 56),
                     // Max Recording Duration
@@ -188,7 +230,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -202,9 +244,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                   children: [
                     settings.when(
                       data: (data) => InkWell(
-                        onTap: () => ref
-                            .read(settingsControllerProvider.notifier)
-                            .startRecordingHotkey(),
+                        onTap: _startHotkeyRecording,
                         borderRadius: BorderRadius.circular(16),
                         child: _SettingTile(
                           icon: Icons.keyboard,
@@ -231,7 +271,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -256,7 +296,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                     const Divider(height: 1, indent: 56),
                     settings.when(
@@ -271,7 +311,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                             .setStartSound(path),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                     const Divider(height: 1, indent: 56),
                     settings.when(
@@ -286,7 +326,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                             .setStopSound(path),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -317,11 +357,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                           await channel.invokeMethod(
                             'openAccessibilitySettings',
                           );
-                          ref.invalidate(settingsControllerProvider);
+                          ref
+                              .read(settingsControllerProvider.notifier)
+                              .refreshPermissions();
                         },
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                     const Divider(height: 1, indent: 56),
                     settings.when(
@@ -335,27 +377,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                         ).invokeMethod('openMicrophoneSettings'),
                       ),
                       loading: () => const _LoadingTile(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-
-          // --- Hotkey Recorder Overlay ---
-          settings.maybeWhen(
-            data: (data) => data.isRecordingHotkey
-                ? _HotkeyRecorderOverlay(
-                    onSave: (keys) => ref
-                        .read(settingsControllerProvider.notifier)
-                        .saveHotkey(keys),
-                    onClose: () => ref
-                        .read(settingsControllerProvider.notifier)
-                        .stopRecordingHotkey(),
-                  )
-                : const SizedBox.shrink(),
-            orElse: () => const SizedBox.shrink(),
           ),
         ],
       ),
@@ -363,317 +390,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
   }
 
   Widget _buildHotkeyDisplay(BuildContext context, HotKey hotkey) {
+    final combo = HotkeyCombo.fromHotKey(hotkey);
+    final parts = combo.getDisplayParts();
     final List<Widget> widgets = [];
 
-    if (hotkey.modifiers != null) {
-      for (final mod in hotkey.modifiers!) {
-        String label = '';
-        if (mod == HotKeyModifier.meta) label = '⌘ Command';
-        if (mod == HotKeyModifier.shift) label = '⇧ Shift';
-        if (mod == HotKeyModifier.alt) label = '⌥ Option';
-        if (mod == HotKeyModifier.control) label = '⌃ Control';
-
-        if (label.isNotEmpty) {
-          if (widgets.isNotEmpty)
-            widgets.add(
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text('+'),
-              ),
-            );
-          widgets.add(_KeyBadge(label: label));
-        }
+    for (int i = 0; i < parts.length; i++) {
+      if (i > 0) {
+        widgets.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Text('+'),
+          ),
+        );
       }
+      widgets.add(_KeyBadge(label: parts[i]));
     }
-
-    String keyLabel = 'Key';
-    if (hotkey.key is PhysicalKeyboardKey) {
-      final physKey = hotkey.key as PhysicalKeyboardKey;
-      keyLabel = physKey.debugName ?? 'Key';
-      if (keyLabel.startsWith('Key ')) keyLabel = keyLabel.substring(4);
-    } else if (hotkey.key is LogicalKeyboardKey) {
-      keyLabel = (hotkey.key as LogicalKeyboardKey).keyLabel;
-    }
-
-    if (hotkey.key == PhysicalKeyboardKey.space ||
-        hotkey.key == LogicalKeyboardKey.space) {
-      keyLabel = 'Space';
-    }
-
-    if (widgets.isNotEmpty)
-      widgets.add(
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Text('+'),
-        ),
-      );
-    widgets.add(_KeyBadge(label: keyLabel.toUpperCase()));
 
     return Row(mainAxisSize: MainAxisSize.min, children: widgets);
-  }
-}
-
-class _HotkeyRecorderOverlay extends StatefulWidget {
-  final Function(List<PhysicalKeyboardKey>) onSave;
-  final VoidCallback onClose;
-  const _HotkeyRecorderOverlay({required this.onSave, required this.onClose});
-
-  @override
-  State<_HotkeyRecorderOverlay> createState() => _HotkeyRecorderOverlayState();
-}
-
-class _HotkeyRecorderOverlayState extends State<_HotkeyRecorderOverlay> {
-  final FocusNode _focusNode = FocusNode();
-  final Set<PhysicalKeyboardKey> _currentlyHeldKeys = {};
-  final List<PhysicalKeyboardKey> _recordedKeys = [];
-  String _displayText = '等待輸入...';
-  bool _isFinished = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.requestFocus();
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _updateDisplayText() {
-    if (_recordedKeys.isEmpty) {
-      setState(() => _displayText = '等待輸入...');
-      return;
-    }
-
-    final List<String> parts = [];
-    final sortedKeys = List<PhysicalKeyboardKey>.from(_recordedKeys);
-
-    // Sort logic
-    sortedKeys.sort((a, b) {
-      int score(PhysicalKeyboardKey k) {
-        if (_isMeta(k)) return 0;
-        if (_isControl(k)) return 1;
-        if (_isAlt(k)) return 2;
-        if (_isShift(k)) return 3;
-        return 4;
-      }
-
-      return score(a).compareTo(score(b));
-    });
-
-    for (final key in sortedKeys) {
-      if (_isMeta(key)) {
-        if (!parts.contains('⌘ Command')) parts.add('⌘ Command');
-      } else if (_isControl(key)) {
-        if (!parts.contains('⌃ Control')) parts.add('⌃ Control');
-      } else if (_isAlt(key)) {
-        if (!parts.contains('⌥ Option')) parts.add('⌥ Option');
-      } else if (_isShift(key)) {
-        if (!parts.contains('⇧ Shift')) parts.add('⇧ Shift');
-      } else if (key == PhysicalKeyboardKey.space) {
-        parts.add('Space');
-      } else {
-        // More robust labeling for PhysicalKeyboardKey
-        String label = key.debugName ?? 'Key';
-        if (label.startsWith('Key ')) {
-          label = label.substring(4);
-        }
-
-        // Handle specific cases or ensure it's uppercase
-        if (label.length == 1) {
-          label = label.toUpperCase();
-        }
-        parts.add(label);
-      }
-    }
-
-    setState(() => _displayText = parts.join(' + '));
-  }
-
-  bool _isModifier(PhysicalKeyboardKey key) =>
-      _isMeta(key) || _isControl(key) || _isAlt(key) || _isShift(key);
-  bool _isMeta(PhysicalKeyboardKey key) =>
-      key == PhysicalKeyboardKey.metaLeft ||
-      key == PhysicalKeyboardKey.metaRight;
-  bool _isControl(PhysicalKeyboardKey key) =>
-      key == PhysicalKeyboardKey.controlLeft ||
-      key == PhysicalKeyboardKey.controlRight;
-  bool _isAlt(PhysicalKeyboardKey key) =>
-      key == PhysicalKeyboardKey.altLeft || key == PhysicalKeyboardKey.altRight;
-  bool _isShift(PhysicalKeyboardKey key) =>
-      key == PhysicalKeyboardKey.shiftLeft ||
-      key == PhysicalKeyboardKey.shiftRight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: KeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: (KeyEvent event) {
-          if (event is KeyDownEvent) {
-            if (_currentlyHeldKeys.isEmpty) {
-              _recordedKeys.clear();
-              _isFinished = false;
-            }
-
-            if (!_recordedKeys.contains(event.physicalKey)) {
-              _recordedKeys.add(event.physicalKey);
-            }
-            _currentlyHeldKeys.add(event.physicalKey);
-            _updateDisplayText();
-
-            if (event.physicalKey == PhysicalKeyboardKey.escape &&
-                _currentlyHeldKeys.length == 1) {
-              _recordedKeys.clear();
-              widget.onClose();
-              return;
-            }
-          } else if (event is KeyUpEvent) {
-            _currentlyHeldKeys.remove(event.physicalKey);
-            if (_currentlyHeldKeys.isEmpty) {
-              _isFinished = true;
-            }
-          }
-        },
-        child: Container(
-          color: Colors.black.withOpacity(0.9),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.keyboard,
-                      color: Colors.orangeAccent,
-                      size: 64,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      '錄製快捷鍵組合',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 32),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
-                        vertical: 32,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: _recordedKeys.isNotEmpty
-                              ? Colors.orangeAccent.withOpacity(0.5)
-                              : Colors.white.withOpacity(0.1),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orangeAccent.withOpacity(
-                              _recordedKeys.isNotEmpty ? 0.1 : 0,
-                            ),
-                            blurRadius: 40,
-                            spreadRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        _displayText,
-                        style: TextStyle(
-                          color: _recordedKeys.isNotEmpty
-                              ? Colors.orangeAccent
-                              : Colors.white24,
-                          fontSize: 56,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-                    Text(
-                      '請「同時按住」組合鍵，放開後可重新輸入',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 64),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        OutlinedButton(
-                          onPressed: widget.onClose,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white60,
-                            side: const BorderSide(color: Colors.white24),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 18,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '取消',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        if (_recordedKeys.isNotEmpty)
-                          ElevatedButton(
-                            onPressed: () => widget.onSave(_recordedKeys),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orangeAccent,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 48,
-                                vertical: 18,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 10,
-                            ),
-                            child: const Text(
-                              '儲存設定',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 40,
-                right: 40,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white54,
-                    size: 36,
-                  ),
-                  onPressed: widget.onClose,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -704,7 +437,7 @@ class _SettingsCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(26),
         ),
       ),
       child: Column(children: children),
@@ -746,8 +479,8 @@ class _PermissionTile extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isAuthorized ? Colors.green : Colors.red).withOpacity(
-                    0.4,
+                  color: (isAuthorized ? Colors.green : Colors.red).withAlpha(
+                    102,
                   ),
                   blurRadius: 4,
                   spreadRadius: 1,
@@ -815,7 +548,7 @@ class _SettingTile extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.6),
+                    ).colorScheme.onSurface.withAlpha(153),
                   ),
                 ),
               ],
@@ -844,7 +577,7 @@ class _AppToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),

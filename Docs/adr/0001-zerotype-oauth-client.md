@@ -2,7 +2,9 @@
 
 Gemini 官方通道需要一種不貼 API Key 的憑證方式。我們決定由 ZeroType 自己當 desktop public client（PKCE），使用者同意的對象是 ZeroType，而不是去填 Client ID，也不是去複製 Antigravity 的長期 token。
 
-**Status**: accepted
+**狀態**：歷史決策，已不適用於現行實作（2026-09-29 核對）。
+
+> 現行入口為 `AntigravityOauthService.login()`，不是本文件規劃的 ZeroType 自有 Gemini OAuth client；倉庫也沒有 `assets/config/oauth.json`。以下保留原決策與當時考量，不應當作已交付功能。現況請參閱 `CLAUDE.md` 的 Antigravity 憑證說明；本次僅校正文件狀態，沒有變更 OAuth 程式。
 
 ## Considered Options
 

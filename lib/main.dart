@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -12,15 +11,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_constants.dart';
 import 'core/controllers/zero_type_controller.dart';
 import 'core/di/injection.dart';
-import 'core/router/app_router.dart';
+import 'core/hotkey/global_hotkey_registrar.dart';
 import 'core/router/router_provider.dart';
 import 'core/services/hotkey_service.dart';
 import 'core/services/tray_service.dart';
-import 'core/state/zero_type_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/window/window_chrome_policy.dart';
 import 'features/history/domain/repositories/history_repository.dart';
 import 'shared/widgets/recording_overlay.dart';
+
+final GlobalKey<ScaffoldMessengerState> _appMessengerKey = GlobalKey();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,16 +33,20 @@ void main() async {
 
 Future<void> _initWindowManager() async {
   await windowManager.ensureInitialized();
-  const windowOptions = WindowOptions(
-    size: Size(900, 650),
-    minimumSize: Size(700, 500),
+  final policy = WindowChromePolicy.current();
+  final windowOptions = WindowOptions(
+    size: const Size(900, 650),
+    minimumSize: const Size(700, 500),
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
+    titleBarStyle: policy.titleBarStyle,
     title: 'ZeroType',
   );
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    if (policy.preventClose) {
+      await windowManager.setPreventClose(true);
+    }
     await windowManager.show();
     await windowManager.focus();
   });
@@ -65,6 +70,7 @@ class ZeroTypeApp extends ConsumerWidget {
     final appRouter = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
+      scaffoldMessengerKey: _appMessengerKey,
       title: 'ZeroType',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -104,12 +110,25 @@ class _AppInitializerState extends ConsumerState<_AppInitializer>
   }
 
   Future<void> _initializeServices() async {
-    await _hotkeyService.initialize();
+    final result = await _hotkeyService.initialize();
+    if (!mounted) return;
     _hotkeyService.setCallback(_onHotkeyActivated);
 
     await _trayService.initialize(onShowWindow: _showWindow, onQuit: _quit);
+    if (result is HotkeyRegistrationFailure && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _appMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
 
-    // Auto-purge expired history records on startup
+    // 啟動時清除過期歷史紀錄。
     final prefs = getIt<SharedPreferences>();
     final retentionDays =
         prefs.getInt(AppConstants.historyRetentionDaysKey) ?? 7;

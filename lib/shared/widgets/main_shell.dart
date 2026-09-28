@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/router/app_router.dart';
+import 'package:zero_type/core/window/window_chrome_policy.dart';
 import 'package:zero_type/features/history/presentation/controllers/history_controller.dart';
+import 'package:zero_type/features/settings/presentation/controllers/settings_controller.dart';
+import 'package:zero_type/features/settings/presentation/widgets/hotkey_recorder_overlay.dart';
 import 'package:zero_type/shared/widgets/app_version_label.dart';
 import 'package:zero_type/shared/widgets/recording_overlay.dart';
 
@@ -93,9 +96,30 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isRecordingHotkey = ref.watch(
+      settingsControllerProvider.select(
+        (s) => s.value?.isRecordingHotkey ?? false,
+      ),
+    );
+
     return Stack(
       fit: StackFit.expand,
-      children: [_buildMain(), const RecordingOverlay()],
+      children: [
+        ExcludeFocus(excluding: isRecordingHotkey, child: _buildMain()),
+        const RecordingOverlay(),
+        if (isRecordingHotkey)
+          FocusScope(
+            autofocus: true,
+            child: HotkeyRecorderOverlay(
+              onSave: (keys) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .saveHotkey(keys),
+              onClose: () => ref
+                  .read(settingsControllerProvider.notifier)
+                  .stopRecordingHotkey(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -121,21 +145,23 @@ class _MainShellPageState extends ConsumerState<MainShellPage> {
         return Scaffold(
           body: Column(
             children: [
-              Container(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                color: Theme.of(context).colorScheme.surface,
-                child: Center(
-                  child: Text(
-                    'Zero Type',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+              if (WindowChromePolicy.current().showInAppHeader) ...[
+                Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Theme.of(context).colorScheme.surface,
+                  child: Center(
+                    child: Text(
+                      'Zero Type',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const Divider(height: 1, thickness: 1),
+                const Divider(height: 1, thickness: 1),
+              ],
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

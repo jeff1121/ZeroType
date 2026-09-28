@@ -89,6 +89,12 @@ dart run flutter_launcher_icons
 
 取消可能來自快捷鍵、Esc 或 overlay 關閉按鈕。改這段流程時，必須同步 `_cancelled`、timer 清理、錄音器清理、音效 / 背景音樂恢復、Riverpod 狀態與 overlay 顯示。
 
+### 視窗與全域熱鍵
+
+`WindowChromePolicy` 使用可測試的 `TargetPlatform`：Windows 為原生標題列，macOS 保留 hidden 與 44px 內建標題。兩平台 `setPreventClose(true)` 後關閉只 hide，退出仍走系統匣。
+
+`HotkeyService` 透過可注入的 `GlobalHotkeyRegistrar` 註冊：macOS 使用 `hotkey_manager`、預設 Alt+Space；Windows 使用 App 自有 RegisterHotKey channel、預設 Ctrl+Shift+Space。`initialize()` 共用 Future，設定 controller 必須等待它；同步 getter 在建構時即可讀取已存組合。錄製前 pause，paused update 只暫存候選，resume 註冊成功才寫入 `global_hotkey`；失敗恢復舊鍵，恢復也失敗時明示 paused，不當作成功。不要改回「先儲存，再試註冊」。
+
 ### 原生平台邊界
 
 Dart 與原生 runner 透過這些固定 MethodChannel 名稱溝通：
@@ -97,6 +103,7 @@ Dart 與原生 runner 透過這些固定 MethodChannel 名稱溝通：
 - `com.zerotype.app/control`
 - `com.zerotype.app/keyboard`
 - `com.zerotype.app/permission`
+- Windows-only：`com.zerotype.app/hotkey`（MethodChannel）與 `com.zerotype.app/hotkey_events`（EventChannel）；macOS 不走此路徑。
 
 macOS 由 `macos/Runner/AppDelegate.swift` 負責不搶焦點的 `NSPanel` overlay、全域 / 本機 Esc 監聽、輔助使用檢查與系統設定連結、CGEvent Cmd+V 貼上，以及自訂開機啟動 channel。`MainFlutterWindow.swift` 負責註冊這些 channel。
 
@@ -117,7 +124,7 @@ Windows 由 `windows/runner/channel_handler.cpp` 用 `SendInput` 實作 Ctrl+V�
 - `history.json` 與 `history_audio/`：保留的轉寫中繼資料與音檔。
 - `history_stats.json`：累計次數與花費。單筆刪除與過期清除不會減少它；`clearAll()` 才會重設。
 
-官方通道有使用中憑證時，模型下拉由 `OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`；Azure：`{endpoint}/openai/deployments?api-version=2023-03-15-preview`，以部署名稱當 model id，不過濾）。查不到或尚未有憑證時才退回 `providers.json`；Azure 查不到時改顯示手動輸入部署名稱。新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；後備清單才改 `providers.json`。
+官方通道有使用中憑證時，模型下拉由 `OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`；Azure：依序嘗試 `{endpoint}/openai/deployments?api-version=2023-03-15-preview`、`/openai/models` 與 `/openai/v1/models`，不做 Whisper 過濾）。查不到或尚未有憑證時退回 `providers.json`；Azure 也提供內建 Whisper 選項，並可隨時手動輸入部署名稱，不以查詢失敗作為唯一入口。新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；後備清單才改 `providers.json`。
 
 ## 產生程式與倉庫慣例
 

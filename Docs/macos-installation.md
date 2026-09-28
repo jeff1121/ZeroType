@@ -2,9 +2,9 @@
 
 ## 目前的簽章狀態
 
-ZeroType 目前使用完整且可驗證的 ad-hoc code signature，但尚未加入 Apple Developer Program，因此目前沒有 Developer ID Application 簽章與 Apple notarization。
+ZeroType 自 v1.5.2 起使用自簽章程式碼簽署憑證（Common Name：`ZeroType`）簽署 macOS App，不再使用純 ad-hoc 簽章。發布流程會驗證 App 與 DMG 內的簽章封印。
 
-這不代表應用程式內容損毀。從 GitHub 下載 DMG 時，瀏覽器會為檔案加上 `com.apple.quarantine` 屬性；macOS Gatekeeper 對未 notarize 的 App 進行檢查時，可能顯示「App 已損毀」或「無法驗證開發者」。
+這張憑證不是 Apple 核發的 Developer ID Application，App 也尚未經 Apple notarization。簽章封印驗證通過只代表簽署後內容完整，不代表 Gatekeeper 已信任開發者，亦不能保證免除所有安全提示。從網路下載後若被阻擋，請先核對來源與 SHA-256，再於「系統設定 → 隱私權與安全性」依系統提示選擇「仍要打開」。
 
 ## 安裝步驟
 
@@ -52,4 +52,4 @@ satisfies its Designated Requirement
 4. 將 App 提交 Apple notarization。
 5. 把 notarization ticket staple 到 App／DMG。
 
-目前帳號只有 Personal Team，因此暫時採用 ad-hoc 發布。未來取得 Developer ID Application 後，將改為完整簽章與 notarization 流程。
+目前發布流程採用 `ZeroType` 自簽憑證，並未執行 Developer ID 簽署與 notarization。未來若改採 Apple 信任的發行方式，仍須完成上述流程；不要把本機自簽章封印驗證當成 Apple 公證。

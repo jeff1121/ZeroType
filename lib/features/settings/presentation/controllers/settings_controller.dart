@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -8,6 +9,8 @@ import 'package:record/record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero_type/core/constants/app_constants.dart';
 import 'package:zero_type/core/di/injection.dart';
+import 'package:zero_type/core/hotkey/global_hotkey_registrar.dart';
+import 'package:zero_type/core/hotkey/hotkey_combo.dart';
 import 'package:zero_type/core/services/hotkey_service.dart';
 import 'package:zero_type/core/services/sound_service.dart';
 import 'settings_state.dart';
@@ -18,20 +21,24 @@ part 'settings_controller.g.dart';
 class SettingsController extends _$SettingsController {
   @override
   Future<SettingsState> build() async {
-    print('[SettingsController] Building state...');
+    debugPrint('[SettingsController] Building state...');
 
     try {
-      print('[SettingsController] Checking if launch at startup is enabled...');
+      debugPrint(
+        '[SettingsController] Checking if launch at startup is enabled...',
+      );
       final isLaunchEnabled =
           getIt<SharedPreferences>().getBool(AppConstants.launchAtStartupKey) ??
           false;
 
-      print('[SettingsController] Fetching current hotkey...');
-      final hotkey = getIt<HotkeyService>().currentHotkey;
+      debugPrint('[SettingsController] Fetching current hotkey...');
+      final HotkeyService hotkeyService = getIt<HotkeyService>();
+      await hotkeyService.initialize();
+      final HotKey hotkey = hotkeyService.currentHotkey;
 
-      print('[SettingsController] Fetching permissions...');
+      debugPrint('[SettingsController] Fetching permissions...');
       final isAccessibilityAuthorized = await _checkAccessibility();
-      final isMicrophoneAuthorized = await AudioRecorder().hasPermission();
+      final isMicrophoneAuthorized = await _checkMicrophone();
 
       final prefs = getIt<SharedPreferences>();
       final soundEnabled = prefs.getBool(AppConstants.soundEnabledKey) ?? true;
@@ -44,7 +51,7 @@ class SettingsController extends _$SettingsController {
       final maxRecordingMinutes =
           prefs.getInt(AppConstants.maxRecordingMinutesKey) ?? 1;
 
-      print('[SettingsController] Build complete.');
+      debugPrint('[SettingsController] Build complete.');
       return SettingsState(
         launchAtStartup: isLaunchEnabled,
         hotkey: hotkey,
@@ -57,13 +64,13 @@ class SettingsController extends _$SettingsController {
         maxRecordingMinutes: maxRecordingMinutes,
       );
     } catch (e, st) {
-      print('[SettingsController] Error building settings state: $e\n$st');
+      debugPrint('[SettingsController] Error building settings state: $e\n$st');
       rethrow;
     }
   }
 
   Future<void> toggleLaunchAtStartup(bool value) async {
-    print('[SettingsController] Toggling launchAtStartup to $value...');
+    debugPrint('[SettingsController] Toggling launchAtStartup to $value...');
     try {
       if (value) {
         await LaunchAtStartup.instance.enable();
@@ -71,12 +78,12 @@ class SettingsController extends _$SettingsController {
         await LaunchAtStartup.instance.disable();
       }
     } on MissingPluginException {
-      print(
+      debugPrint(
         '[SettingsController] toggleLaunchAtStartup failed: plugin missing.',
       );
       return;
     } catch (e) {
-      print('[SettingsController] toggleLaunchAtStartup error: $e');
+      debugPrint('[SettingsController] toggleLaunchAtStartup error: $e');
       return;
     }
     await getIt<SharedPreferences>().setBool(
@@ -89,81 +96,125 @@ class SettingsController extends _$SettingsController {
     }
   }
 
-  Future<void> startRecordingHotkey() async {
-    print('[SettingsController] Starting hotkey recording...');
-    final currentState = state.value;
-    if (currentState == null) return;
+  bool _isChangingHotkey = false;
 
-    // Disable global hotkey BEFORE showing overlay to prevent accidental triggers
-    await getIt<HotkeyService>().pause();
-
-    state = AsyncData(currentState.copyWith(isRecordingHotkey: true));
-  }
-
-  void stopRecordingHotkey() {
-    print('[SettingsController] Stopping hotkey recording...');
-    final currentState = state.value;
-    if (currentState == null) return;
-
-    // Re-enable global hotkey
-    getIt<HotkeyService>().resume();
-
-    state = AsyncData(currentState.copyWith(isRecordingHotkey: false));
-  }
-
-  Future<void> saveHotkey(List<PhysicalKeyboardKey> keys) async {
-    print('[SettingsController] Saving hotkey with keys: $keys');
-
-    final List<HotKeyModifier> modifiers = [];
-    PhysicalKeyboardKey? mainKey;
-
-    for (final key in keys) {
-      if (key == PhysicalKeyboardKey.metaLeft ||
-          key == PhysicalKeyboardKey.metaRight) {
-        if (!modifiers.contains(HotKeyModifier.meta))
-          modifiers.add(HotKeyModifier.meta);
-      } else if (key == PhysicalKeyboardKey.controlLeft ||
-          key == PhysicalKeyboardKey.controlRight) {
-        if (!modifiers.contains(HotKeyModifier.control))
-          modifiers.add(HotKeyModifier.control);
-      } else if (key == PhysicalKeyboardKey.altLeft ||
-          key == PhysicalKeyboardKey.altRight) {
-        if (!modifiers.contains(HotKeyModifier.alt))
-          modifiers.add(HotKeyModifier.alt);
-      } else if (key == PhysicalKeyboardKey.shiftLeft ||
-          key == PhysicalKeyboardKey.shiftRight) {
-        if (!modifiers.contains(HotKeyModifier.shift))
-          modifiers.add(HotKeyModifier.shift);
-      } else {
-        // Take the last non-modifier key as the main key
-        mainKey = key;
+  Future<HotkeyRegistrationResult> startRecordingHotkey() async {
+    if (_isChangingHotkey || state.value == null) {
+      return const HotkeyRegistrationFailure('設定尚未就緒，請稍後再試。');
+    }
+    if (state.value!.isRecordingHotkey) {
+      return const HotkeyRegistrationSuccess();
+    }
+    _isChangingHotkey = true;
+    try {
+      final HotkeyService service = getIt<HotkeyService>();
+      final HotkeyRegistrationResult result = await service.pause();
+      if (result is HotkeyRegistrationFailure) {
+        final HotkeyRegistrationResult restored = await service.resume(
+          discardPending: true,
+        );
+        // 暫停失敗不能讓原本可用的熱鍵永遠停用；恢復也失敗時提供重試入口。
+        _finishHotkeyRecording(service);
+        if (restored is HotkeyRegistrationFailure) {
+          return HotkeyRegistrationFailure(
+            '${result.message} 原快捷鍵無法恢復：${restored.message}',
+            restored.details,
+          );
+        }
+        return result;
       }
+      if (ref.mounted) {
+        final SettingsState? current = state.value;
+        if (current != null) {
+          state = AsyncData(current.copyWith(isRecordingHotkey: true));
+        }
+      }
+      return result;
+    } finally {
+      _isChangingHotkey = false;
     }
+  }
 
-    if (mainKey == null) {
-      print('[SettingsController] No main key selected, ignoring save.');
-      stopRecordingHotkey();
-      return;
+  Future<HotkeyRegistrationResult> stopRecordingHotkey() async {
+    if (_isChangingHotkey) {
+      return const HotkeyRegistrationFailure('快捷鍵正在儲存，請稍後再試。');
     }
+    _isChangingHotkey = true;
+    try {
+      final HotkeyService service = getIt<HotkeyService>();
+      final HotkeyRegistrationResult result = await service.resume(
+        discardPending: true,
+      );
+      _finishHotkeyRecording(service);
+      return result;
+    } finally {
+      _isChangingHotkey = false;
+    }
+  }
 
-    final newHotKey = HotKey(
-      key: mainKey,
-      modifiers: modifiers,
-      scope: HotKeyScope.system,
-    );
+  Future<HotkeyRegistrationResult> saveHotkey(
+    List<PhysicalKeyboardKey> keys, [
+    TargetPlatform? platform,
+  ]) async {
+    if (_isChangingHotkey || state.value == null) {
+      return const HotkeyRegistrationFailure('快捷鍵正在處理，請稍後再試。');
+    }
+    _isChangingHotkey = true;
+    try {
+      final HotkeyService service = getIt<HotkeyService>();
+      final HotkeyParseResult parsed = HotkeyCombo.parse(
+        keys,
+        platform: platform ?? service.platform,
+      );
+      if (parsed is HotkeyParseFailure) {
+        final HotkeyRegistrationResult restored = await service.resume(
+          discardPending: true,
+        );
+        _finishHotkeyRecording(service);
+        final String recovery = restored is HotkeyRegistrationFailure
+            ? ' 原快捷鍵無法恢復：${restored.message}'
+            : '';
+        return HotkeyRegistrationFailure(
+          '${parsed.message}$recovery',
+          parsed.reason,
+        );
+      }
 
-    await getIt<HotkeyService>().updateHotkey(newHotKey);
+      HotkeyRegistrationResult result = await service.updateHotkey(
+        (parsed as HotkeyParseSuccess).combo,
+      );
+      if (result.isSuccess) {
+        // 錄製期間 update 僅暫存候選組合；確認原生註冊後才算儲存成功。
+        result = await service.resume();
+      } else if (service.isPaused) {
+        final HotkeyRegistrationResult restored = await service.resume(
+          discardPending: true,
+        );
+        if (restored is HotkeyRegistrationFailure) {
+          result = HotkeyRegistrationFailure(
+            '${(result as HotkeyRegistrationFailure).message} '
+            '原快捷鍵無法恢復：${restored.message}',
+          );
+        }
+      }
+      _finishHotkeyRecording(service);
+      return result;
+    } finally {
+      _isChangingHotkey = false;
+    }
+  }
 
-    // Stop recording and trigger refresh
-    final currentState = state.value;
-    if (currentState != null) {
+  void _finishHotkeyRecording(HotkeyService service) {
+    if (!ref.mounted) return;
+    final SettingsState? current = state.value;
+    if (current != null) {
       state = AsyncData(
-        currentState.copyWith(isRecordingHotkey: false, hotkey: newHotKey),
+        current.copyWith(
+          isRecordingHotkey: service.isPaused,
+          hotkey: service.currentHotkey,
+        ),
       );
     }
-
-    // Resume local hotkey (already handled in stopRecordingHotkey but stay safe)
-    getIt<HotkeyService>().resume();
   }
 
   Future<void> toggleSound(bool value) async {
@@ -218,31 +269,29 @@ class SettingsController extends _$SettingsController {
     }
   }
 
-  /// Called by SettingsPage whenever it becomes visible.
+  /// 只刷新已載入的權限資料；錄製期間不重新檢查或重建設定。
   Future<void> refreshPermissions() async {
-    // Run checks independently of current state loading status
-    final isAccessibility = await _checkAccessibility();
-    final isMicrophone = await AudioRecorder().hasPermission();
+    if (state.value == null || state.value!.isRecordingHotkey) return;
+    final bool isAccessibility = await _checkAccessibility();
+    final bool isMicrophone = await _checkMicrophone();
+    if (!ref.mounted) return;
 
-    final currentState = state.value;
-    if (currentState != null) {
-      state = AsyncData(
-        currentState.copyWith(
-          isAccessibilityAuthorized: isAccessibility,
-          isMicrophoneAuthorized: isMicrophone,
-        ),
-      );
-    } else {
-      // State is still loading (initial build not done yet);
-      // wait for it to complete, then update
-      state.whenData((s) {
-        state = AsyncData(
-          s.copyWith(
-            isAccessibilityAuthorized: isAccessibility,
-            isMicrophoneAuthorized: isMicrophone,
-          ),
-        );
-      });
+    final SettingsState? current = state.value;
+    if (current == null || current.isRecordingHotkey) return;
+    state = AsyncData(
+      current.copyWith(
+        isAccessibilityAuthorized: isAccessibility,
+        isMicrophoneAuthorized: isMicrophone,
+      ),
+    );
+  }
+
+  Future<bool> _checkMicrophone() async {
+    final AudioRecorder recorder = AudioRecorder();
+    try {
+      return await recorder.hasPermission();
+    } finally {
+      await recorder.dispose();
     }
   }
 
@@ -253,7 +302,7 @@ class SettingsController extends _$SettingsController {
     try {
       return await channel.invokeMethod<bool>('checkAccessibility') ?? false;
     } catch (e) {
-      print('[SettingsController] checkAccessibility error: $e');
+      debugPrint('[SettingsController] checkAccessibility error: $e');
       return false;
     }
   }
