@@ -12,6 +12,7 @@
 - Windows 改用自有 `com.zerotype.app/hotkey` MethodChannel 呼叫 Win32 `RegisterHotKey`，固定 id 1、root HWND、`MOD_NOREPEAT`；檢查 BOOL 與 `GetLastError`，失敗不宣稱註冊成功。
 - `com.zerotype.app/hotkey_events` EventChannel 只轉發有效 id 的觸發；尚無 listener、未註冊或已解除時不觸發。
 - Windows 排除無修飾鍵、Alt+Space、Alt+F4、Ctrl+Esc、含 Ctrl+Alt+Delete 與未支援主鍵。舊的保留組合或啟動註冊失敗會依規格退回平台預設。
+- 修正 Windows CI 實際發現的 vk 解析區域變數遮蔽（MSVC C4456／C2220）；保留 `/WX`，不以關閉警告跳過編譯錯誤。
 - macOS 仍使用 `hotkey_manager`，不變更 macOS 原生 runner。
 
 ### 熱鍵儲存與 macOS 設定頁回歸

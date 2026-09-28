@@ -624,6 +624,7 @@
 - [x] 複查報告：`Docs/Windows-Hotkey-Audit.md`，記錄之前的 macOS 回歸、測試假陽性、analyzer 規則遮蔽、修正證據與未測範圍。
 - [x] 新增真實 controller／Shell 與 registrar channel 測試；補上取消恢復、保存失敗、合成放鍵、最小視窗、背景焦點與可見錯誤。
 - [x] `1.5.3+9` 同步至 pubspec、README、RELEASE_NOTES；新增 PR checks（Dart 檢查與 Windows build），CI 結果另看 PR。
+- [x] 首次 Windows CI 發現 C4456／C2220 區域變數遮蔽，已以 `value32`／`value64` 修正；不關閉 `/WX`。首次 run `36456656040` 的 Dart gates 通過，Windows 編譯失敗；補正後結果另行追蹤。
 - [x] 本機 macOS Release 重新建置 1.5.3 (9)，以 ZeroType 自簽憑證簽署並通過驗證 script，架構 x86_64 arm64。不代表 Apple notarization，也未重跑人工操作。
 
 - [x] **完成時在回覆裡列出**

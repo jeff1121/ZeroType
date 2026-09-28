@@ -119,6 +119,7 @@ flutter run -d macos
 - **Windows 全域熱鍵可靠註冊**
   - 預設改為 `Ctrl+Shift+Space`，舊的 Windows 保留組合自動退回平台預設；macOS 保留 `⌥ Option+Space` 與 `hotkey_manager`。
   - Windows 改走 App 自有 `RegisterHotKey` channel，檢查回傳值與 `GetLastError`，加上 `MOD_NOREPEAT`，並透過 EventChannel 傳遞已註冊熱鍵的觸發事件。
+  - 修正 Windows CI 發現的 C++ 區域變數遮蔽（MSVC C4456／C2220），保留警告視為錯誤的嚴格編譯門檻。
   - 拒絕沒有修飾鍵、Alt+Space、Alt+F4、Ctrl+Esc、含 Ctrl+Alt+Delete 與未支援主鍵；註冊被占用時顯示繁體中文原因與可用的錯誤碼，不再靜默宣稱成功。
 - **熱鍵儲存／取消／失敗回復**
   - 修正錄製時暫停全域熱鍵後，儲存卻未恢復註冊的缺陷。候選組合必須註冊成功才更新目前熱鍵與 `global_hotkey` 設定。

@@ -190,10 +190,10 @@ void SetupChannels(flutter::BinaryMessenger* messenger, HWND window_handle) {
           int64_t raw_vk = 0;
           auto vk_it = args->find(flutter::EncodableValue("vk"));
           if (vk_it != args->end()) {
-            if (const auto* value = std::get_if<int32_t>(&vk_it->second)) {
-              raw_vk = *value;
-            } else if (const auto* value = std::get_if<int64_t>(&vk_it->second)) {
-              raw_vk = *value;
+            if (const auto* value32 = std::get_if<int32_t>(&vk_it->second)) {
+              raw_vk = *value32;
+            } else if (const auto* value64 = std::get_if<int64_t>(&vk_it->second)) {
+              raw_vk = *value64;
             }
           }
           if (raw_vk < 1 || raw_vk > 0xFE) {

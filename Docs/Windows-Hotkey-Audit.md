@@ -83,6 +83,10 @@
 - macOS 安裝文件原寫 ad-hoc，已改為既有的 ZeroType 自簽憑證流程與限制。
 - Requirement 標示歷史規劃（非現行已交付功能）；OAuth ADR 標示已不適用於現行 Antigravity 登入，不改 OAuth 實作。
 
+## PR CI 補充紀錄
+
+首次 PR 檢查（run `36456656040`）：Dart gates 通過，Windows Release 編譯失敗。MSVC 在 `channel_handler.cpp` 的 vk 32／64-bit 解析分支偵測同名區域變數 `value` 遮蔽（C4456），因 `/WX` 轉為 C2220。已把兩個變數明確命名為 `value32`／`value64`，保留嚴格警告設定及原解析行為。此項由真實 Windows CI 發現，不是 macOS 本機驗證；修正後結果以後續 PR checks 為準，仍不等同 Windows 人工實測。
+
 ## 後續不可省略的檢查
 
 1. 共享 service／Shell／controller 變更需測真實組裝，至少涵蓋初始化未完成、失敗、恢復與 UI 所見資料一致性。
