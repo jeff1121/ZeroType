@@ -164,17 +164,29 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('同名的五個 ID 都可辨識，選模型儲存原 ID 且不重查目錄', (tester) async {
+  testWidgets('同名五個模型只顯示完整 ID，儲存原 ID 且不重查目錄', (tester) async {
     await mount(tester);
     expect(requests, 1);
     final List<String?> ids = dropdown(
       tester,
     ).items!.map((item) => item.value).toList();
     expect(ids.toSet().length, 5);
+    expect(ids, [
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash-thinking',
+      'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
+    ]);
     await tester.tap(find.byKey(const ValueKey('speech-model-dropdown')));
     await tester.pumpAndSettle();
     expect(find.text('gemini-2.5-flash'), findsWidgets);
     expect(find.text('gemini-3.1-flash-lite'), findsWidgets);
+    expect(
+      find.text('Gemini 3.5 Flash Lite', skipOffstage: false),
+      findsNothing,
+    );
+    expect(find.byTooltip(RegExp('Gemini 3.5 Flash Lite')), findsNothing);
     final Finder choice = find.text('gemini-3.1-flash-lite').last;
     await tester.ensureVisible(choice);
     await tester.tap(choice);
@@ -188,6 +200,46 @@ void main() {
     );
     expect(dropdown(tester).value, 'gemini-3.1-flash-lite');
     expect(requests, 1);
+  });
+
+  testWidgets('依完整 ID 排序，選單與排除清單及 tooltip 均不顯示 API 名稱', (tester) async {
+    payload = {
+      'models': {
+        'z-model': {'displayName': 'API fake A'},
+        'a-model': {'displayName': 'API fake Z'},
+        'z-unsupported': {
+          'displayName': 'API fake B',
+          'supportedMimeTypes': {'image/png': true},
+        },
+        'a-unsupported': {
+          'displayName': 'API fake Y',
+          'supportedMimeTypes': {'image/png': true},
+        },
+      },
+    };
+    await mount(tester);
+    expect(dropdown(tester).items!.map((item) => item.value), [
+      'a-model',
+      'z-model',
+    ]);
+    await tester.tap(find.byKey(const ValueKey('speech-model-dropdown')));
+    await tester.pumpAndSettle();
+    expect(find.text('a-model'), findsWidgets);
+    expect(find.text('z-model'), findsWidgets);
+    expect(find.textContaining('API fake', skipOffstage: false), findsNothing);
+    expect(find.byTooltip(RegExp('API fake')), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ExpansionTile));
+    await tester.pumpAndSettle();
+    expect(find.text('a-unsupported'), findsOneWidget);
+    expect(find.text('z-unsupported'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('a-unsupported')).dy,
+      lessThan(tester.getTopLeft(find.text('z-unsupported')).dy),
+    );
+    expect(find.textContaining('API fake', skipOffstage: false), findsNothing);
+    expect(find.byTooltip(RegExp('API fake')), findsNothing);
   });
 
   testWidgets('reload 失敗保留遠端清單並明示快取，不能宣稱成功', (tester) async {
@@ -429,7 +481,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Candidate A').last);
+      await tester.tap(find.text('candidate-a').last);
       await tester.pumpAndSettle();
       expect(
         await repository.getSelectedSpeechModelId(
@@ -504,7 +556,7 @@ void main() {
     TargetPlatform.macOS,
     TargetPlatform.windows,
   ]) {
-    testWidgets('$platform 的 700×500 選單支援長名稱、鍵盤選取與 Escape', (tester) async {
+    testWidgets('$platform 的 700×500 選單支援長 ID、鍵盤選取與 Escape', (tester) async {
       final String longName = List.filled(12, 'A long model title').join(' ');
       payload = {
         'models': {
@@ -535,7 +587,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      expect(find.text('Second').hitTestable(), findsOneWidget);
+      expect(
+        find.text('second-model-with-a-long-but-distinct-id').hitTestable(),
+        findsOneWidget,
+      );
+      expect(find.text(longName, skipOffstage: false), findsNothing);
+      expect(find.text('Second', skipOffstage: false), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }

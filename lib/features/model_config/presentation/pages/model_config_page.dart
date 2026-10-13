@@ -323,16 +323,15 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
         selectedId: AiModel(id: selectedId, name: selectedId),
     };
     final models = byId.values.toList()
-      ..sort((first, second) {
-        final byName = first.name.toLowerCase().compareTo(
-          second.name.toLowerCase(),
-        );
-        return byName != 0 ? byName : first.id.compareTo(second.id);
-      });
+      ..sort((first, second) => first.id.compareTo(second.id));
     final selectedModel = byId[selectedId];
-    final unsupportedModels = catalog.models
-        .where((model) => model.speechSupport == ModelSpeechSupport.unsupported)
-        .toList();
+    final unsupportedModels =
+        catalog.models
+            .where(
+              (model) => model.speechSupport == ModelSpeechSupport.unsupported,
+            )
+            .toList()
+          ..sort((first, second) => first.id.compareTo(second.id));
     final unsupportedCount = unsupportedModels.length;
     final unknownCount = catalog.models
         .where((model) => model.speechSupport == ModelSpeechSupport.unknown)
@@ -492,13 +491,8 @@ class _UnsupportedModels extends StatelessWidget {
           return ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            title: Text(model.name),
-            subtitle: Text(
-              [
-                if (model.id != model.name) model.id,
-                model.supportReason ?? '不支援目前錄音格式',
-              ].join('\n'),
-            ),
+            title: Text(model.id),
+            subtitle: Text(model.supportReason ?? '不支援目前錄音格式'),
           );
         }).toList(),
       ),
@@ -939,7 +933,7 @@ class _ModelDropdown extends StatelessWidget {
           isExpanded: true,
           itemHeight: MediaQuery.textScalerOf(
             context,
-          ).scale(88).clamp(kMinInteractiveDimension, double.infinity),
+          ).scale(64).clamp(kMinInteractiveDimension, double.infinity),
           menuMaxHeight: (MediaQuery.sizeOf(context).height * 0.6).clamp(
             0.0,
             420.0,
@@ -985,24 +979,12 @@ class _ModelOption extends StatelessWidget {
             ModelSpeechSupport.unknown => '轉寫能力未驗證',
           };
     return Tooltip(
-      message: [
-        model.name,
-        if (model.name != model.id) model.id,
-        ?badge,
-        ?model.supportReason,
-      ].join('\n'),
+      message: [model.id, ?badge, ?model.supportReason].join('\n'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(model.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          if (model.name != model.id)
-            Text(
-              model.id,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
-            ),
+          Text(model.id, maxLines: 1, overflow: TextOverflow.ellipsis),
           if (badge != null)
             Text(
               badge,

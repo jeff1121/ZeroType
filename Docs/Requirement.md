@@ -61,6 +61,6 @@
 - **無獨立「AI 精修」階段**：目前僅有語音辨識流程，未提供獨立的 Gemini 文字精修 Section（字典檔仍會併入語音辨識 Prompt）。
 - **憑證儲存**：API Key 與各項設定存於 `SharedPreferences`（非安全儲存），非原規劃的 `flutter_secure_storage`。
 - **雙通道與多元憑證**：語音辨識已擴充為「官方 / Proxy」雙通道；官方憑證方式含 **API Key** 與 **Antigravity OAuth**（Gemini OAuth 已於 v1.2.0 移除）。
-- **即時模型目錄**：以原始 ID 區分同名模型，名稱與 ID 一併呈現。目錄來源、合法空結果與查詢失敗分開；失敗先使用同來源記憶體快取，再使用適合該通道的內建目錄，保留已選 ID 且不自動改選。
+- **即時模型目錄**：依使用者 2026-10-14 回饋，選單只顯示完整原始 ID 並按 ID 排序，移除可能混淆版本的供應商顯示名稱。目錄來源、合法空結果與查詢失敗分開；失敗先使用同來源記憶體快取，再使用適合該通道的內建目錄，保留已選 ID 且不自動改選。
 - **語音能力**：Antigravity 依目前錄音請求的 `audio/mp4` 判斷支援／不支援／未確認；缺 metadata 不會排除模型。明確不支援者不提供新選擇，既有選取保留並警示，目錄不成為轉寫前置閘門。Proxy 自訂別名與 Azure 手動部署保持相容。
 - **Azure OpenAI Whisper**：第三個語音辨識 Provider（僅官方通道，使用者填 Endpoint / API Key / API Version；model id 為部署名稱）。詳見 `Docs/Tasks.md` 第九節。
