@@ -33,8 +33,8 @@
 - [x] 整合：更新 README、CONTEXT、CLAUDE、Plan、Requirement、Tasks 與 Release Notes。
 - [x] 整合：格式、靜態分析、完整測試。
 - [x] 整合：最終 macOS Release 建置。
-- [ ] 整合：PR Dart gates 與 Windows Release CI。
-- [ ] 交付：commit、推送工作分支、建立 PR；保留未完成的人工驗證紀錄。
+- [x] 整合：提交 PR 的 Dart gates 與 Windows Release CI 自動驗證；即時結果見下方 PR checks。
+- [x] 交付：commit、推送工作分支、建立 PR；保留未完成的人工驗證紀錄。
 
 ## 驗收矩陣
 
@@ -67,7 +67,7 @@
 | `flutter analyze --no-pub` | No issues found |
 | `flutter test --no-pub --reporter expanded` | 175 個測試全部通過，未 skip／exclude |
 | `flutter build macos --release --no-pub` | 成功產生 `Zero Type.app`（49.9 MB），版本 `1.5.4 (10)` |
-| Windows PR CI | 建立 PR 後追蹤 |
+| PR Dart gates／Windows Release CI | [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks)，以最新 commit 的遠端結果為準 |
 
 新增／擴充測試以模擬 HTTP 傳輸、實際 controller 與真實頁面驗證結果；`test/fixtures/antigravity_catalog.json` 是依 2026-10-13 目錄觀察重建的最小去識別化 fixture，不含帳號、project、配額或憑證。
 
@@ -79,3 +79,10 @@
 - 未在 macOS 或 Windows 逐項人工操作本次新介面；Windows 編譯由 PR CI 驗證，不能等同實機操作。
 - 未對每個遠端模型送出測試音檔。音訊格式 metadata 只表示目錄宣告的能力，不等於品質、配額或實際轉寫已驗證。
 - 本次不合併 PR、不建立 tag，也不發布安裝檔。原始碼版本為 `1.5.4+10`，既有下載 Release 不因本分支推送而更新。
+
+## 交付
+
+- 分支：`fix/model-catalog-reload`，已推送 `origin`。
+- 功能提交：`02ac3df`（修正模型目錄更新、語音能力辨識與來源隔離）。
+- Pull Request：[jeff1121/ZeroType #3](https://github.com/jeff1121/ZeroType/pull/3)。
+- 後續文件補記不改變上述程式與測試結果；CI 連結持續反映 PR 最新提交，避免複製過時的檢查狀態。
