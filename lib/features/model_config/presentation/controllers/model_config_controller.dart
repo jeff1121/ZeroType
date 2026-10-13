@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zero_type/core/di/injection.dart';
 import 'package:zero_type/core/services/antigravity_auth_source.dart';
 import 'package:zero_type/core/services/antigravity_oauth_service.dart';
-import 'package:zero_type/core/services/official_model_catalog_service.dart';
-import 'package:zero_type/core/services/proxy_model_catalog_service.dart';
 import 'package:zero_type/features/model_config/data/repositories/model_config_repository_impl.dart';
 import 'package:zero_type/features/model_config/domain/entities/ai_provider.dart';
 import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
@@ -80,14 +77,39 @@ class SpeechProviderController extends _$SpeechProviderController {
   }
 
   Future<void> selectModel(String modelId) async {
-    final state = await future;
-    if (state.providerId == null) return;
+    final previous = await future;
+    if (previous.providerId == null) return;
     await _repo.saveSelectedSpeechModelId(
-      state.providerId!,
-      state.channel,
+      previous.providerId!,
+      previous.channel,
       modelId,
     );
-    ref.invalidateSelf();
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current == null ||
+        current.providerId != previous.providerId ||
+        current.channel != previous.channel) {
+      return;
+    }
+    state = AsyncData(
+      SpeechConnectionState(
+        providerId: current.providerId,
+        channel: current.channel,
+        officialModelId: current.channel == SpeechChannel.official
+            ? modelId
+            : current.officialModelId,
+        proxyModelId: current.channel == SpeechChannel.proxy
+            ? modelId
+            : current.proxyModelId,
+        officialApiKey: current.officialApiKey,
+        proxyApiKey: current.proxyApiKey,
+        proxyRoot: current.proxyRoot,
+        officialCredentialMethod: current.officialCredentialMethod,
+        antigravityAvailable: current.antigravityAvailable,
+        azureEndpoint: current.azureEndpoint,
+        azureApiVersion: current.azureApiVersion,
+      ),
+    );
   }
 
   Future<void> saveApiKey(String apiKey) async {
@@ -141,101 +163,5 @@ class SpeechProviderController extends _$SpeechProviderController {
       CredentialMethod.antigravityOauth,
     );
     ref.invalidateSelf();
-  }
-}
-
-@riverpod
-Future<List<AiModel>> proxyModels(Ref ref) async {
-  final connection = await ref.watch(speechProviderControllerProvider.future);
-  if (connection.channel != SpeechChannel.proxy) return const [];
-  final root = connection.proxyRoot;
-  if (root == null || root.isEmpty) return const [];
-  try {
-    return await getIt<ProxyModelCatalogService>().listModels(
-      proxyRoot: root,
-      apiKey: connection.proxyApiKey ?? '',
-    );
-  } catch (e) {
-    debugPrint('[ProxyModels] 目錄查詢失敗：$e');
-    return const [];
-  }
-}
-
-Duration? _noRetry(int retryCount, Object error) => null;
-
-/// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
-@Riverpod(retry: _noRetry)
-Future<List<AiModel>?> officialModels(Ref ref) async {
-  final connection = await ref.watch(speechProviderControllerProvider.future);
-  if (connection.channel != SpeechChannel.official) return null;
-  final providerId = connection.providerId;
-  if (providerId == null || providerId.isEmpty) return null;
-
-  final auth = await _resolveCatalogAuth(connection);
-  if (auth == null) return null;
-
-  try {
-    return await getIt<OfficialModelCatalogService>().listModels(
-      providerId: providerId,
-      apiKey: auth.apiKey,
-      accessToken: auth.accessToken,
-      projectId: auth.projectId,
-      isAntigravity:
-          connection.activeCredentialMethod ==
-          CredentialMethod.antigravityOauth,
-      azureEndpoint: auth.azureEndpoint,
-    );
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<
-  ({
-    String? apiKey,
-    String? accessToken,
-    String? projectId,
-    String? azureEndpoint,
-    String? azureApiVersion,
-  })?
->
-_resolveCatalogAuth(SpeechConnectionState connection) async {
-  if (connection.isAzure) {
-    final key = connection.activeApiKey;
-    final endpoint = connection.azureEndpoint;
-    if (key == null || key.isEmpty || endpoint == null || endpoint.isEmpty) {
-      return null;
-    }
-    return (
-      apiKey: key,
-      accessToken: null,
-      projectId: null,
-      azureEndpoint: endpoint,
-      azureApiVersion: connection.azureApiVersion,
-    );
-  }
-  switch (connection.activeCredentialMethod) {
-    case CredentialMethod.apiKey:
-      final key = connection.activeApiKey;
-      if (key == null || key.isEmpty) return null;
-      return (
-        apiKey: key,
-        accessToken: null,
-        projectId: null,
-        azureEndpoint: null,
-        azureApiVersion: null,
-      );
-    case CredentialMethod.antigravityOauth:
-      final authData = await getIt<AntigravityAuthSource>().getAuthData();
-      if (authData == null) return null;
-      return (
-        apiKey: null,
-        accessToken: authData.accessToken,
-        projectId: authData.projectId,
-        azureEndpoint: null,
-        azureApiVersion: null,
-      );
-    case null:
-      return null;
   }
 }

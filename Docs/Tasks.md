@@ -1,5 +1,7 @@
 # ZeroType — 任務列表
 
+> 目前工作（2026-10-14）：原始碼目標 `1.5.5+13`，統整模型目錄、Gemini 多段轉寫、僅顯示 model ID 與收合高度調整，沿用 [PR #3](https://github.com/jeff1121/ZeroType/pull/3)。完整驗證與交付進度統一追蹤於 [task.md](task.md)；本文件保留歷史紀錄，第十二、十三節提供索引。原始碼升版不代表 GitHub Release 已發布。
+
 > 標記說明：`[前置]` = 此任務必須先完成才能進行後續任務
 > 第一至十節含歷史規劃／交付紀錄，不等同本次重新逐功能驗收。2026-09-29 已核對本次 Windows／熱鍵修復（第十一節），並更正可確認的過時敘述；舊規劃中的精確 UI、計價樣例以目前實作為準。未取得的 Windows／Azure 真機結果不因使用者一般性人工回報而補勾。
 
@@ -136,7 +138,7 @@
 - [x] Windows 貼上功能（`SendInput`）
 - [ ] 錯誤處理細化（網路失敗重試、API 額度不足提示）— *非阻塞 backlog*
 
-> **目前要做的是第十一節。** 規格在 `Docs/Plan.md`（2026-09-24，Windows 視窗與熱鍵）。第六節是已完成的舊跨平台項目，不要重做。第九節 Azure 已實作，真機驗證仍另計，不是這次範圍。
+> 第十一節是 2026-09-24 至 2026-09-29 的 Windows 視窗與熱鍵修復紀錄，原規格保留於 `Docs/Plan.md`。目前工作以 [task.md](task.md) 為準，不重做已完成的舊跨平台項目；第九節 Azure 的實作與真機驗證仍分開記錄。
 
 ---
 
@@ -296,7 +298,7 @@
 - [x] Antigravity 直連：`cloudcode-pa` / `daily-cloudcode-pa` 的 `v1internal:generateContent`，帶 project id
 
 ### 8.3 官方即時模型目錄（`OfficialModelCatalogService`）
-- [x] 有可用憑證時向官方 models API 查詢（Gemini `/v1beta/models`、OpenAI `/v1/models`）；查不到或無憑證時退回 `providers.json`
+- [x] 有可用憑證時向官方 models API 查詢（Gemini `/v1beta/models`、OpenAI `/v1/models`、Antigravity `v1internal:fetchAvailableModels`）。現行以 `CatalogFetchResult` 區分成功空目錄與失敗；`modelCatalogProvider` 在失敗時先使用同來源成功快取，再使用適用內建清單。一般官方後備來自 `providers.json`，Antigravity 使用專屬內建清單；來源明示、不冒稱更新成功。
 - [x] Proxy 目錄查詢（`ProxyModelCatalogService`，`{根}/v1/models`）
 
 ### 8.4 Antigravity OAuth 一鍵登入落地憑證（v1.2.0）
@@ -317,13 +319,15 @@
 - [x] Provider 列新增 `Azure`（label 直接叫「Azure」）
 - [x] 選 Azure 後，通道只顯示「官方」（隱藏 Proxy 並強制 `SpeechChannel.official`）
 - [x] 憑證區改為 Azure 專用三欄（皆必填）：**Service Endpoint**、**API Key（Access Token）**、**API Version**
-- [x] 預設提供 `OpenAI Whisper (whisper)` 模型選項，亦可點擊「更新模型目錄」向 Azure 查詢可用部署與模型
+- [x] 預設提供內建 Whisper 模型，現行選項顯示原始 ID `whisper`；亦可點擊「更新模型目錄」向 Azure 查詢可用部署與模型
 - [x] 隨時提供「手動指定自訂部署名稱」入口，即使企業有自訂部署名稱也能直接填寫並使用
 - [x] 查不到部署時自動退回內建清單或提供手動輸入，絕不阻塞轉寫設定
 
 ### 9.2 技術細節（原規劃與後續補充）
 
-> 2026-09-29 核對：現行清單依序嘗試 deployments、`/openai/models`、`/openai/v1/models`，失敗／空清單繼續下一個來源；Endpoint 正規化為 origin，不只刪除末尾斜線。以下部署端點說明為其中一條路徑，並非唯一來源。
+> 2026-09-29 的版本依序嘗試 deployments、`/openai/models`、`/openai/v1/models`，當時失敗／空清單會繼續下一來源。2026-10-14 核對現行 `OfficialModelCatalogService`：合法空清單即為成功；僅可後備的查詢錯誤才繼續下一端點，401／403／429 立即回報失敗。Endpoint 正規化為 origin，不只刪除末尾斜線；通道快取與後備由 `modelCatalogProvider` 管理。下方保留原部署規劃，不應恢復「失敗回空清單」的舊契約。
+
+> 模型選項現在只顯示原始 ID，因此內建 Whisper 顯示 `whisper`，自訂部署顯示部署 ID；手動指定入口始終保留。`_resolveCatalogAuth` 已由新的目錄 controller 取代；API Version 仍是轉寫設定，目錄各端點使用其既定版本。
 - 轉寫：`POST {endpoint}/openai/deployments/{deployment}/audio/transcriptions?api-version={apiVersion}`
   - Header：`api-key: {token}`（**非** `Authorization: Bearer`）
   - Body：`multipart/form-data`，`file=...`、`response_format=json`；回應 `{"text": "..."}`
@@ -331,7 +335,7 @@
 - 部署清單（給 refresh 用）：`GET {endpoint}/openai/deployments?api-version=2023-03-15-preview`，Header `api-key: {token}`
   - 回應 `data[]`，每筆 `id`=部署名稱、`model`=基礎模型；以 `id` 當 model id 列出（不過濾）
   - ⚠️ 此 data-plane 清單 API 在新 api-version 已淡出，故 9.1 的手動輸入 fallback 為必要
-- Endpoint 正規化：去除結尾 `/`（例：`https://<res>.openai.azure.com`）
+- Endpoint 正規化（現行）：保留 scheme、host 與 port，去除已貼入的 `/openai/...` 路徑與尾斜線（例：`https://<res>.openai.azure.com`）
 - 預設值建議：轉寫 api-version 使用者填（預設可帶 `2024-10-21`）；清單固定 `2023-03-15-preview`
 
 ### 9.3 實作任務（依序）
@@ -342,9 +346,9 @@
 - [x] `model_config_repository(.dart / _impl)`：azure endpoint / api-version 存取
 
 **Phase 2 — 服務層**
-- [x] Azure 部署清單查詢 + 解析（新 `AzureModelCatalogService` 或在 `OfficialModelCatalogService` 加 azure 分支），失敗回傳空清單
+- [x] Azure 部署清單查詢與解析已採用 `OfficialModelCatalogService` 的 Azure 分支；早期規劃為失敗回空清單，現行以 `CatalogFetchResult` 明確回報失敗，由目錄 controller 選擇後備。
 - [x] `SpeechRecognitionService._transcribeWithAzure`：組 deployment URL、`api-key` header、multipart、解析 `text`
-- [x] `model_config_controller.dart`：`build` 載入 endpoint/api-version；`saveAzureEndpoint` / `saveAzureApiVersion`；`selectProvider(azure)` 強制官方通道；`_resolveCatalogAuth` azure 分支（帶 endpoint + api-version）
+- [x] `model_config_controller.dart`：`build` 載入 endpoint/api-version；`saveAzureEndpoint` / `saveAzureApiVersion`；`selectProvider(azure)` 強制官方通道。當時的 `_resolveCatalogAuth` 已移除，現行目錄授權由 `model_catalog_controller.dart` 處理。
 - [x] `zero_type_controller.dart`：`_resolveAuth` azure 分支回傳 apiKey + endpoint；`_transcribe` / `transcribe` 增加 endpoint / api-version 參數並串接
 
 **Phase 3 — UI（`model_config_page.dart`）**
@@ -633,3 +637,25 @@
   - Windows 手動清單 11 項各自是通過、失敗已修、或未執行。
   - macOS 手動確認是通過或未執行。
   - 已知未做事項只允許兩種：沒有 Windows 機器所以沒跑手動清單、沒有改 macOS 實機。其他未完成項視同這次沒做完，繼續修。
+
+---
+
+## 十二、模型目錄更新改善（v1.5.4 開發階段紀錄）
+
+本次完整計劃、平行分工、驗收矩陣與實測結果統一放在使用者指定的 [task.md](task.md)，避免兩份清單進度分歧。
+
+- 修正同名不同 ID 無法辨識、未使用音訊能力 metadata、reload 失敗誤報成功。
+- 查詢結果與顯示來源分開；合法空目錄不作失敗，失敗保留同來源快取或適用內建清單。
+- 選模型不觸發重新查詢；以查詢情境與請求序號隔離來源、快取和過期通知。
+- 保留已選 ID、未知能力模型、Proxy 自訂別名與 Azure 手動部署；目錄不加入轉寫前置條件。
+- 跨平台人工驗證與實際遠端轉寫測試狀態以本次紀錄為準，不沿用第十一節的歷史人工回報。
+
+## 十三、v1.5.5 文件同步與交付
+
+目前目標版本為 `1.5.5+13`；此前 `1.5.4+10` 至 `1.5.4+12` 是本次分支的開發建置紀錄，保留原版本與各輪實際測試結果，不追溯改寫成新版本已驗證。
+
+- 模型選單、提示與排除清單只使用完整 model ID，依 ID 排序；API `displayName` 僅保留於資料層。能力提示、已選 ID 與 Azure 手動部署仍保留。
+- 收合外框高度較原含邊框高度減少 40%，字級維持；展開選項保留能力提示所需高度，兩者不共用壓縮後行高。
+- Gemini 官方／Proxy 與 Antigravity 共用第一候選的可見文字解析，略過思考段落、保留帶簽章的可見文字；封鎖與截斷回應採安全錯誤，不合併其他候選。
+- 2026-10-14 的單一模型合成語音實測不代表逐模型或 Windows／Azure 真機皆已驗證；原使用者錄音未讀取、未上傳。
+- 格式、分析、完整測試、macOS 建置與 PR checks 的最新結果只在 [task.md](task.md) 維護。繼續更新既有 PR #3；commit／push／PR 更新不等於合併、建立 tag 或發布安裝檔。

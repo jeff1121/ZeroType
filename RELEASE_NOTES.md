@@ -1,44 +1,54 @@
-# ZeroType v1.5.3
+# ZeroType v1.5.5（待發佈）
 
-## 本次更新
+原始碼版本為 `1.5.5+13`，整合模型目錄、Gemini 多段轉寫與模型欄位調整。截至 2026-10-14，最新已發佈版本仍為 [v1.5.3](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.3)。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 尚未合併；先前 `1.5.4+10`／`+11`／`+12` 均為未發佈的測試 build，沒有 v1.5.4 GitHub Release。
 
-### Windows 視窗框與關閉行為
-- 主視窗改用 `TitleBarStyle.normal` 與系統標題「ZeroType」，恢復原生拖移、縮放、最小化、最大化與關閉控制；Windows 內容區不再顯示第二條 44px「Zero Type」。
-- macOS 維持 `TitleBarStyle.hidden`、交通燈與原本的 44px 標題列。
-- 兩平台在顯示視窗前設定 `setPreventClose(true)`；關閉只 hide 到系統匣，真正退出仍走「結束 ZeroType」。
+## 模型欄位與識別
 
-### Windows 全域熱鍵
-- Windows 預設為 `Ctrl+Shift+Space`，macOS 預設仍為 `⌥ Option+Space`。
-- Windows 改用自有 `com.zerotype.app/hotkey` MethodChannel 呼叫 Win32 `RegisterHotKey`，固定 id 1、root HWND、`MOD_NOREPEAT`；檢查 BOOL 與 `GetLastError`，失敗不宣稱註冊成功。
-- `com.zerotype.app/hotkey_events` EventChannel 只轉發有效 id 的觸發；尚無 listener、未註冊或已解除時不觸發。
-- Windows 排除無修飾鍵、Alt+Space、Alt+F4、Ctrl+Esc、含 Ctrl+Alt+Delete 與未支援主鍵。舊的保留組合或啟動註冊失敗會依規格退回平台預設。
-- 修正 Windows CI 實際發現的 vk 解析區域變數遮蔽（MSVC C4456／C2220）；保留 `/WX`，不以關閉警告跳過編譯錯誤。
-- macOS 仍使用 `hotkey_manager`，不變更 macOS 原生 runner。
+- 收合模型欄位的外框高度縮短 40%；在 100% 字級下，由 `64 + 2 = 66` 降為 `(64 + 2) × 0.6 = 39.6` 邏輯像素。
+- 展開選項仍為 64 邏輯像素，模型 ID 與能力提示的字級不縮小；高度保留系統文字縮放。
+- 模型選單、已排除項目與 tooltip 以完整 model ID 辨識模型，僅按 ID 去重及排序。不同 ID 即使共用供應商名稱也各自保留。
+- 不再將遠端 `displayName` 顯示成主標、副標或 tooltip；它僅保留在資料層，不用來宣稱模型實際版本。長 ID tooltip、能力提示、既有選取與 Azure 手動部署仍保留。
 
-### 熱鍵儲存與 macOS 設定頁回歸
-- 修正錄製前 pause 後儲存未 resume 的問題。候選組合先暫存，原生註冊成功後才提交目前熱鍵與 preferences；註冊／寫入失敗會嘗試恢復舊有效鍵。
-- 啟動、暫停、取消與恢復的失敗都回傳結果；連舊鍵也無法恢復時保持暫停並顯示原因，不假裝可用。開始錄製時解除失敗亦會嘗試恢復舊鍵。
-- 修正主 Shell 提前讀取設定造成的 `LateInitializationError`，以及只給預設值可能顯示過時熱鍵的後續問題。同步載入持久化組合，設定頁等待共用的初始化工作；載入異常提供可見原因與重試。
-- 沿用 `global_hotkey` 與 `HotKey.toJson/fromJson`；macOS 已儲存的 logical key、Fn／Caps Lock 等資訊不被轉換丟棄。
-- 錄製覆蓋層覆蓋主視窗、阻擋背景滑鼠與鍵盤焦點；按鍵來源改用 `HardwareKeyboard`，卸載時移除 handler。
-- 切回 App 不再 invalidate 錄製狀態；合成放鍵事件可正確清除上一組修飾鍵，單獨 Esc 可取消。
-- 錄製介面支援最小 700×500 視窗；儲存失敗的 SnackBar 在覆蓋層關閉後仍可見；按鍵名稱不依賴 Release 模式會為 null 的 `debugName`。
+## Gemini 多段轉寫回應
 
-### 測試、文件與驗證誠實性
-- 移除先前加入的五個全域 analyzer ignore 規則，恢復原本分析門檻並實際清除診斷。跨檔變更限日誌／型別／未使用 import／等價色值與 deprecated 參數等 lint 清理，不變更錄音、轉寫、貼上、Azure 或 Antigravity 業務流程。
-- 修正 Fake registrar 的持續失敗／保留舊 active 狀態，讓回滾測試必須真的重新註冊舊鍵才能通過。
-- 補上 service、MethodChannel／EventChannel、真實 SettingsController／MainShell、焦點與生命週期回歸測試；本機完整測試 109 個通過，純邏輯兩檔行與分支覆蓋率均為 100%。
-- 新增 PR 格式／分析／測試與 Windows Release 編譯檢查；CI 編譯不是 Windows 人工實測，狀態以 PR checks 為準。
-- 校正 Plan／Tasks 狀態、macOS 安裝簽章說明、歷史需求與 OAuth ADR 定位。詳細證據見 `Docs/Windows-Hotkey-Audit.md`。
+- 修正 Antigravity 回傳 HTTP 200、第一段為空白思考內容、後續段落才包含逐字稿時，App 只取第一段而回報空文字的問題。
+- Gemini 官方／Proxy 與 Antigravity 共用解析，依原順序合併第一個候選內的可見文字，最後才移除首尾空白；不合併其他候選。
+- 略過 `thought: true` 段落；正常文字即使附有 `thoughtSignature` 仍保留，不輸出簽章或推理內容。
+- 封鎖、達輸出長度上限、缺少候選、只有思考內容或未完成的回應，顯示固定安全錯誤，不把截斷逐字稿當成成功結果。
+- 成功日誌不記錄轉寫全文。音訊 payload、提示詞、使用中模型與既有請求重試策略維持原有行為；沒有新增第二次 AI 精修呼叫。
 
-## 人工測試與限制
-- 使用者於 2026-09-29 回報先前自簽 macOS 測試版的人工測試已完成、未發現重大問題；本次複查新增修正未冒稱已被先前人工測試涵蓋。
-- 未在 Windows 執行實機 11 項清單；逐項狀態保留於 `Docs/Tasks.md` 第十一節。
-- macOS 延續自簽憑證 `ZeroType` 的簽署流程。封印完整性不代表 Gatekeeper 信任，也不等於 Apple Developer ID 或 notarization；首次開啟仍可能需手動允許。
+## 模型目錄與授權來源
 
-## 版本與下載
-- 版本：`1.5.3+9`（上一版 `1.5.2+8`）。
-- macOS：發布流程提供 `ZeroType-macOS.dmg`／`ZeroType-macOS-arm64.zip`；以實際產物內的架構資訊為準。
-- Windows x64：發布流程提供 `ZeroType-Windows-x64.zip`。
-- 校驗值：`SHA256SUMS.txt`／`SHA256SUMS-Windows.txt`。
-- 本次提交與 PR 不會自動建立 tag、合併或發布 GitHub Release；下載產物須待獨立發布流程完成。
+- 官方與 Proxy 目錄明確區分遠端成功、合法空目錄、未完成憑證設定與失敗。快取或內建清單不再冒稱剛取得的遠端目錄。
+- 查詢失敗優先使用同來源的記憶體快取，再使用適合該通道與憑證方式的內建清單；來源與失敗原因會顯示在畫面。
+- 目錄依 Provider、通道、endpoint 與憑證情境隔離。同來源進行中的更新合併，較舊回應與通知不能覆蓋新來源；選模型只保存 ID，不重新查詢授權或整份目錄。
+- Antigravity 依 `supportedMimeTypes`，針對目前 M4A 錄音使用的 `audio/mp4` 分為支援、不支援與未確認。明確不支援者不提供新選擇；缺少能力資料的模型仍可選並標示未驗證。
+- 已選但不支援或未列於最新目錄的 ID 保留並提示，不自動改選。目錄不是轉寫前置閘門，實際轉寫仍沿用既有選取並以伺服器回應為準。
+- 已開啟的選單在儲存前重新檢查候選，避免選到剛被移除或判定不支援的模型。Proxy 自訂別名保持可選；Azure 維持僅官方通道，保留部署清單與手動指定部署。
+- 授權更新依憑證情境合併，寫回前核對來源快照；更換帳號後，較舊更新不得共用或覆寫新授權。目錄識別綁定同一次 token／project 結果，正常續期與由本程式執行的 refresh token 輪替保持同一來源。
+
+## 文件校正
+
+- README 的 macOS 最低部署目標改為 12.0，建置工具鏈對齊 CI 的 Flutter 3.47.0 與 Dart `^3.11.0` 需求。
+- 明示 macOS 原生浮動錄音面板、Windows App 內 Overlay，以及兩平台分別使用 `Cmd+V`／`Ctrl+V` 貼上的差異。
+- API Key 目前保存在 `SharedPreferences`，不是作業系統安全憑證儲存；字典與提示詞是模型指令，不保證每次辨識品質。
+- 空輸入約束不是本機 VAD 靜音閘門；歷史花費採內建價格與用量估算，不是即時報價或供應商帳單。
+- SHA-256 驗證說明配合清單中的 `release/` 路徑前綴，並區分單檔對照與 DMG／ZIP 同目錄核對。
+
+## 驗證紀錄與已知限制
+
+`1.5.5+13` 本機檢查已完成：
+
+- 格式檢查：82 檔、0 變更；靜態分析：無問題；完整測試：213 項通過。
+- macOS Release 建置成功（49.9 MB），以 `EXPECTED_VERSION=1.5.5` 執行版本驗證腳本通過；產物為 `1.5.5 (13)`，最低系統 macOS 12.0，包含 x86_64 與 arm64。
+- 此次本機產物為 ad-hoc 簽章，不是發布工作流程使用 `ZeroType` 自簽憑證的產物；兩者皆不等於 Apple Developer ID 或 notarization。
+
+前期修補於 2026-10-14 使用合成語音，在 `gemini-3.5-flash-lite` 的 Antigravity 回應精確重現空白思考段落與後續可見文字。修正後，中文合成音訊＋未修改的內建提示詞、英文合成音訊＋簡短指令，均完成服務層即時轉寫驗證。原使用者錄音未讀取、未上傳；這些檢查沒有操作實體麥克風或剪貼簿，不是完整桌面流程實測，也不代表每個模型皆已實測。
+
+內建長範例提示詞搭配全英文合成音訊時，仍曾出現翻譯或混入範例內容。此模型／提示詞品質問題尚未解決，沒有因修復多段解析而宣稱排除。
+
+`1.5.4+11` 的 212 項測試、`1.5.4+12` 的 213 項測試及各自 macOS 建置，保留為先前測試 build 的歷史；上列本版結果已針對 `1.5.5+13` 重新執行。詳細紀錄見 [Docs/task.md](Docs/task.md)。Windows 本版 CI 結果以 [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 對應提交為準，不沿用舊提交的結果宣稱本版通過；widget 平台模擬與 CI 編譯亦不等同 Windows 實機操作，未完成的人工驗證仍列於工作清單。
+
+## 發佈狀態
+
+- 此次提交、推送與 PR 更新不建立 tag、不合併 PR，也不發布 GitHub Release；下載產物以實際 Release 為準。

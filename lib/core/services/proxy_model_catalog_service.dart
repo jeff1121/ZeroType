@@ -1,63 +1,73 @@
 import 'package:dio/dio.dart';
 import 'package:zero_type/features/model_config/domain/entities/ai_provider.dart';
+import 'package:zero_type/features/model_config/domain/entities/model_catalog.dart';
+
+import 'model_catalog_http.dart';
 
 class ProxyModelCatalogService {
   ProxyModelCatalogService({required Dio dio}) : _dio = dio;
 
   final Dio _dio;
 
-  String normalizeRoot(String raw) {
-    var root = raw.trim();
-    if (root.endsWith('/')) {
-      root = root.substring(0, root.length - 1);
-    }
-    return root;
-  }
+  String normalizeRoot(String raw) =>
+      raw.trim().replaceFirst(RegExp(r'/+$'), '');
 
-  Future<List<AiModel>> listModels({
+  Future<CatalogFetchResult> listModels({
     required String proxyRoot,
     required String apiKey,
   }) async {
     final root = normalizeRoot(proxyRoot);
-    if (root.isEmpty) return const [];
-
-    final response = await _dio.get<dynamic>(
-      '$root/v1/models',
-      options: Options(
+    if (root.isEmpty) {
+      return const CatalogFetchResult.failure(
+        CatalogFailure(CatalogFailureKind.invalidResponse),
+      );
+    }
+    try {
+      final response = await requestModelCatalog(
+        dio: _dio,
+        url: '$root/v1/models',
         headers: {if (apiKey.isNotEmpty) 'Authorization': 'Bearer $apiKey'},
-      ),
-    );
-
-    return _parseModels(response.data);
+      );
+      return CatalogFetchResult.success(_parseModels(response.data));
+    } catch (error) {
+      return CatalogFetchResult.failure(classifyCatalogFailure(error));
+    }
   }
 
   List<AiModel> _parseModels(dynamic data) {
-    if (data is Map<String, dynamic>) {
+    if (data is Map) {
       final openAi = data['data'];
       if (openAi is List) {
-        return openAi
-            .whereType<Map>()
-            .map((item) {
-              final id = item['id']?.toString() ?? '';
-              return AiModel(id: id, name: id);
-            })
-            .where((m) => m.id.isNotEmpty)
-            .toList();
+        return normalizeCatalogModels(
+          readCatalogList(data, 'data')
+              .map((item) {
+                final id = readCatalogId(item['id']);
+                final dynamic displayName = item['displayName'];
+                final String name = displayName is String
+                    ? displayName.trim()
+                    : '';
+                return AiModel(id: id, name: name.isEmpty ? id : name);
+              })
+              .where((m) => m.id.isNotEmpty),
+        );
       }
       final google = data['models'];
       if (google is List) {
-        return google
-            .whereType<Map>()
-            .map((item) {
-              final raw =
-                  item['name']?.toString() ?? item['id']?.toString() ?? '';
-              final id = raw.replaceFirst(RegExp(r'^models/'), '');
-              return AiModel(id: id, name: id);
-            })
-            .where((m) => m.id.isNotEmpty)
-            .toList();
+        return normalizeCatalogModels(
+          readCatalogList(data, 'models')
+              .map((item) {
+                final raw = readCatalogId(item['name'] ?? item['id']);
+                final id = raw.replaceFirst(RegExp(r'^models/'), '');
+                final dynamic displayName = item['displayName'];
+                final String name = displayName is String
+                    ? displayName.trim()
+                    : '';
+                return AiModel(id: id, name: name.isEmpty ? id : name);
+              })
+              .where((m) => m.id.isNotEmpty),
+        );
       }
     }
-    return const [];
+    throw const CatalogFailure(CatalogFailureKind.invalidResponse);
   }
 }
