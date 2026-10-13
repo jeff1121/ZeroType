@@ -45,11 +45,11 @@ _Avoid_: 更新後自動改選、按顯示名稱合併
 _Avoid_: 列模型
 
 **可見轉寫文字**：
-模型正式回傳給使用者的逐字稿，與思考內容及其簽章分開。Gemini 的第一個候選可含多段內容；逐字稿依序合併該候選的可見文字，不混入思考段落，也不拼接其他候選。帶思考簽章的文字不必然是思考內容。首段空白不等於整份逐字稿為空；模型封鎖或輸出截斷也不等於成功的空白錄音。
+模型正式回傳給使用者的逐字稿，與思考內容及其簽章分開。Gemini 的第一個候選可含多段內容；逐字稿依序合併該候選的可見文字，不混入思考段落，也不拼接其他候選。帶思考簽章的文字不必然是思考內容。首段空白不等於整份逐字稿為空；封鎖、輸出截斷、只有思考或沒有可讀文字都不能當成完整逐字稿。正常文字片段全為空白時走空結果流程，但不能僅憑空文字推定錄音沒有聲音。
 _Avoid_: 只取第一段文字、合併多個候選、將思考內容貼上、截斷回應視為成功
 
 **憑證方式**：
-證明有權呼叫某個通道的方式。Gemini 官方通道同時存在 API Key 與 OAuth；Gemini Proxy 通道與 OpenAI 目前只有 API Key。
+證明有權呼叫某個通道的方式。Gemini 官方通道可選 API Key 或 Antigravity OAuth；Gemini Proxy 通道、OpenAI 與 Azure 使用 API Key。
 _Avoid_: Provider、串接方式
 
 **API Key**：
@@ -69,7 +69,7 @@ _Avoid_: Provider、供應商
 _Avoid_: 使用者自備 Client ID、API Key
 
 **使用中憑證**：
-使用中通道當下實際拿來轉寫的那一份憑證。各通道的憑證分開保存。失效時轉寫必須失敗，不得改用其他已存憑證，也不得改走另一條通道。
+使用中通道當下實際拿來轉寫的那份授權。各通道設定分開保存；無法透過使用中的憑證方式取得有效授權時，轉寫失敗，不自動改選 API Key／OAuth 或另一條通道。Antigravity 的本機引用會從其候選來源取用授權，不代表 App 已固定綁定某個帳號或檔案。
 _Avoid_: 預設 Provider、自動挑選
 
 **憑證失效**：
@@ -89,9 +89,13 @@ _Avoid_: 登出 Antigravity
 _Avoid_: 帳號紀錄
 
 **本機登入引用**：
-Antigravity OAuth 的取用方式。ZeroType 每次轉寫前優先引用 `~/.cli-proxy-api/antigravity-*.json`，亦支援 `~/.gemini/oauth_creds.json`；不把 refresh_token 複製到 App 設定。來源登出、檔案消失，或 refresh 失敗即失效。
+Antigravity OAuth 的取用方式。ZeroType 每次轉寫前優先引用 `~/.cli-proxy-api/antigravity-*.json`，亦支援 `~/.gemini/oauth_creds.json`，依候選順序尋找可用授權；不把 refresh_token 複製到 App 設定。無法取得有效授權時視為失效。已在等待更新的來源若被替換或刪除，該次請求不再沿用舊授權，也不以另一份新授權補回結果。
 _Avoid_: 匯入、複製 token 到 ZeroType 儲存
 
 **更新授權**：
-在不重新走登入來源的前提下，把既有短期授權換成新的。Antigravity OAuth 用本機檔的 refresh_token 向 Google 換新，並把新的 access_token 與到期時間寫回同一檔。失敗才成為憑證失效。
+在不重新登入的前提下，把既有短期授權換成新的。Antigravity OAuth 用本機檔的 refresh_token 向 Google 換新，核對來源仍是同一份後，將新授權與到期時間寫回。同一來源的正常續期不改變模型目錄所屬情境；另一帳號或來源的授權不能混入該次更新。
 _Avoid_: 重新登入、自動改用 API Key
+
+**目錄來源情境**：
+判斷某份模型目錄可以沿用的範圍，由 Provider、通道、根位址及憑證身分共同決定。它與選取哪個 model ID 不同；選模型不會另查目錄。更新中可沿用同情境的清單，失敗時的來源與原因必須可辨識；不同情境與晚到的舊請求不能覆蓋目前目錄。
+_Avoid_: 只按 Provider 共用快取、以顯示名稱判定來源、選模型就重新登入

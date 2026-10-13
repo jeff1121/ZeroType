@@ -1,6 +1,50 @@
 # 模型目錄更新與轉寫修補工作清單
 
-本文件追蹤模型目錄、空文字回報修補，以及使用者指定的 ID 唯一標籤，目標版本 `1.5.4+12`。build 10／11 驗證紀錄保留於下方；更早工作紀錄保留於 [Tasks.md](Tasks.md)。所有修改沿用待發布的 [PR #3](https://github.com/jeff1121/ZeroType/pull/3)。
+本文件追蹤模型目錄、轉寫修補、ID 唯一標籤、收合高度調整與文件校正，當前目標版本為 **`1.5.5+13`**。`1.5.4` 的 build 10／11／12 是本分支未發佈的測試歷程，保留原始驗證紀錄；更早工作見 [Tasks.md](Tasks.md)。所有修改沿用尚未合併的 [PR #3](https://github.com/jeff1121/ZeroType/pull/3)。2026-10-14 核對 GitHub Releases，最新已發布版本仍為 `v1.5.3`。
+
+## 目前交付範圍（v1.5.5）
+
+- 模型目錄以完整 ID 呈現及排序；API 顯示名稱保留為資料，不顯示在選單、tooltip 或排除清單。
+- 收合欄位高度縮短 40%：100% 字級時約 66 → 39.6 logical pixels，字級不變；展開選項保留 64 高度與能力提示，隨系統字級縮放。
+- 官方／Proxy 目錄區分成功、空結果與失敗，具同來源快取、授權隔離與過期結果防護。
+- Gemini 各通道合併首候選可見文字並排除思考內容，避免首段空白導致整份轉寫被丟棄。
+- 說明文件逐項對照目前原始碼；產品能力、歷史計劃、提示詞指令與已完成的驗證分開記錄。
+- 升版、提交與 PR 不代表已發布安裝檔；本次不建立 tag、不自動合併或發布 GitHub Release。
+
+## 文件核對清單
+
+| 文件 | 核對範圍 |
+|---|---|
+| `README.md` | 現行功能、v1.5.5 完整修正紀錄、平台需求與已知限制 |
+| `RELEASE_NOTES.md` | v1.5.5 變更、版本與驗證狀態 |
+| `CLAUDE.md` | 目前架構、持久化、工具鏈及開發規範 |
+| `CONTEXT.md` | Provider／通道／憑證、目錄與轉寫領域語意 |
+| `.agents/rules/flutter-desktop.md` | 與 CLAUDE 一致的語言規則、Dart 用語與實際本地化狀態 |
+| `Docs/Requirement.md` | 歷史需求與現行實作的差異 |
+| `Docs/Plan.md` | Windows 修復歷史定位與現行工作入口 |
+| `Docs/Tasks.md` | 歷史交付紀錄、過時描述與現行索引 |
+| `Docs/task.md` | 本次工作、版本、驗證與限制的單一進度紀錄 |
+| `Docs/Windows-Hotkey-Audit.md` | 保留當時缺陷與證據，避免混同為本版實測 |
+| `Docs/macos-installation.md` | 實際產物、checksum 路徑、自簽章與安裝步驟 |
+| `Docs/adr/0001-zerotype-oauth-client.md` | 歷史 ADR 與現行 Antigravity 登入區分 |
+
+## v1.5.5 驗收進度
+
+- [x] `pubspec.yaml` 升為 `1.5.5+13`，修正 package description 不再宣稱獨立精修。
+- [x] 納入已完成的下拉選單收合高度調整，保留文字大小與展開選項高度。
+- [x] 完成上述 12 份 Markdown 核對，README 與 Release Notes 同步。
+- [x] 本版格式、靜態分析、完整測試與 macOS Release 建置。
+- [x] 納入 `1.5.5+13` 提交與既有 PR #3 交付；遠端檢查依本版提交的 [PR checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 判定。
+
+| v1.5.5 檢查 | 結果 |
+|---|---|
+| 格式、分析、完整測試 | 2026-10-14 實跑：82 files / 0 changed；No issues found；213 tests passed |
+| macOS Release 版本 | 成功建置，Info.plist 為 `1.5.5 (13)`，最低 macOS `12.0`，App 49.9 MB |
+| macOS 簽章封印與架構 | `EXPECTED_VERSION=1.5.5 bash scripts/verify_macos_release.sh` 通過；`x86_64 arm64`；本機為 ad-hoc 簽章，並非發布 workflow 的 ZeroType 自簽憑證，也不是 notarization |
+| 文件相對連結與版本一致性 | 12 份 Markdown、21 個相對連結皆可解析；pubspec／README／Release Notes／工作清單版本一致為 `1.5.5+13` |
+| PR Dart gates／Windows Release CI | 以本版提交對應的 [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 為準 |
+
+以下 build 10／11／12 均為歷史驗證，未改寫成 v1.5.5 的驗證結果。
 
 ## 已確認的問題
 
@@ -133,5 +177,7 @@
 
 - 分支：`fix/model-catalog-reload`，已推送 `origin`。
 - 功能提交：`02ac3df`（修正模型目錄更新、語音能力辨識與來源隔離）。
+- 轉寫修補：`cef64d3`（正確解析 Gemini 多段轉寫並排除思考內容）。
+- ID 標籤：`2421c47`（模型選單只顯示完整 ID，該提交的 Dart／Windows CI 已通過）。
 - Pull Request：[jeff1121/ZeroType #3](https://github.com/jeff1121/ZeroType/pull/3)。
-- build 10 的既有提交與驗證保留為歷史；build 11 的新增轉寫修補另行提交，完成狀態依上方清單記錄。CI 連結持續反映 PR 最新提交，避免複製過時的檢查狀態。
+- 目前交付版本為 `1.5.5+13`，包含上述修正、40% 收合高度調整與 12 份文件同步。舊提交的驗證保留為歷史；CI 連結持續反映 PR 最新提交，不能把舊提交的綠燈當成本版結果。

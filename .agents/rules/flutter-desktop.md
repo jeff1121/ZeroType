@@ -7,11 +7,13 @@ You are a senior Dart programmer with experience in the Flutter framework and a 
 
 Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 
+These are coding guidelines, not a list of shipped features. Current architecture and release status are documented in `CLAUDE.md` and `Docs/task.md`; historical plans do not override the current implementation.
+
 ## Dart General Guidelines
 
 ### Basic Principles
 
-- Use English for all code and documentation.
+- Use Traditional Chinese (zh-TW) for documentation, comments, and user-facing text. Keep identifiers, file names, and API names in English, consistent with `CLAUDE.md`.
 - Always declare the type of each variable and function (parameters and return value).
   - Avoid using any.
   - Create necessary types.
@@ -60,8 +62,8 @@ Generate code, corrections, and refactorings that comply with the basic principl
 - Don't abuse primitive types and encapsulate data in composite types.
 - Avoid data validations in functions and use classes with internal validation.
 - Prefer immutability for data.
-  - Use readonly for data that doesn't change.
-  - Use as const for literals that don't change.
+  - Use Dart `final` fields for data that does not change.
+  - Use `const` constructors and literals where Dart permits constant values.
 
 ### Classes
 
@@ -107,7 +109,7 @@ Generate code, corrections, and refactorings that comply with the basic principl
 - Use controller pattern for business logic with Riverpod
 - Use Riverpod to manage state
   - see keepAlive if you need to keep the state alive
-- Use freezed to manage UI states
+- Follow each feature's existing immutable state model: Freezed where already used, or plain immutable Dart classes such as the model catalog state.
 - Controller always takes methods as input and updates the UI state that effects the UI
 - Use getIt to manage dependencies
   - Use singleton for services and repositories
@@ -117,7 +119,7 @@ Generate code, corrections, and refactorings that comply with the basic principl
   - Use extras to pass data between pages
 - Use extensions to manage reusable code
 - Use ThemeData to manage themes
-- Use AppLocalizations to manage translations
+- Current user-facing text is written directly in Traditional Chinese; the project does not yet use AppLocalizations. Introduce localization only as an explicitly scoped feature.
 - Use constants to manage constants values
 - When a widget tree becomes too deep, it can lead to longer build times and increased memory usage. Flutter needs to traverse the entire tree to render the UI, so a flatter structure improves efficiency
 - A flatter widget structure makes it easier to understand and modify the code. Reusable components also facilitate better code organization

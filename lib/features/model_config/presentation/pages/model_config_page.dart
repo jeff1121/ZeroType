@@ -916,8 +916,13 @@ class _ModelDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final menuItemHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(64).clamp(kMinInteractiveDimension, double.infinity);
 
     return Container(
+      // 收合外框縮短 40%；展開選項保留能力提示所需的高度。
+      height: (menuItemHeight + 2) * 0.6,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: cs.surface,
@@ -931,9 +936,20 @@ class _ModelDropdown extends StatelessWidget {
               ? selectedModelId
               : null,
           isExpanded: true,
-          itemHeight: MediaQuery.textScalerOf(
-            context,
-          ).scale(64).clamp(kMinInteractiveDimension, double.infinity),
+          isDense: true,
+          itemHeight: menuItemHeight,
+          selectedItemBuilder: (_) => models
+              .map(
+                (model) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: _ModelOption(
+                    model: model,
+                    isMissingSelection: model.id == missingModelId,
+                    compact: true,
+                  ),
+                ),
+              )
+              .toList(),
           menuMaxHeight: (MediaQuery.sizeOf(context).height * 0.6).clamp(
             0.0,
             420.0,
@@ -963,10 +979,15 @@ class _ModelDropdown extends StatelessWidget {
 }
 
 class _ModelOption extends StatelessWidget {
-  const _ModelOption({required this.model, required this.isMissingSelection});
+  const _ModelOption({
+    required this.model,
+    required this.isMissingSelection,
+    this.compact = false,
+  });
 
   final AiModel model;
   final bool isMissingSelection;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -984,7 +1005,12 @@ class _ModelOption extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(model.id, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            model.id,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: compact ? const TextStyle(height: 1) : null,
+          ),
           if (badge != null)
             Text(
               badge,
@@ -992,6 +1018,7 @@ class _ModelOption extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
+                height: compact ? 1 : null,
                 color: model.speechSupport == ModelSpeechSupport.unsupported
                     ? colors.error
                     : colors.onSurfaceVariant,
