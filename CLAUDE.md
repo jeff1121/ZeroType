@@ -87,6 +87,10 @@ dart run flutter_launcher_icons
 6. 音檔移到持久化歷史目錄，寫入 `TranscriptionRecord`，再用 `model_pricing.dart` 累加花費統計。
 7. 以 Flutter clipboard API 複製結果，再由原生 `keyboard` channel 模擬 Cmd+V 或 Ctrl+V。
 
+Gemini 官方／Proxy 與 Antigravity 的文字提取共用 `lib/core/services/gemini_transcription_response.dart` 的 `extractGeminiTranscriptionText`。只處理第一個 candidate，依序串接其中非 `thought: true` 的文字 parts，最後才 trim；不能只取 `parts[0]`，也不能把多個 candidates 合併成逐字稿。`thoughtSignature` 不是思考段落標記，帶簽章的可見文字仍應保留；簽章與思考內容不能進入逐字稿或錯誤訊息。封鎖、輸出上限／截斷、缺候選與未完成回應使用固定安全錯誤，不能把部分內容當成功。這項修補不改音訊 payload、提示詞、model ID 或請求重試策略。
+
+2026-10-14 以約 4.5 秒合成英文語音在 `gemini-3.5-flash-lite`／Antigravity 重現 HTTP 200 `STOP`，首段空白 thought、第二段為正確逐字稿的回應；原使用者錄音未讀取、未上傳。修補後的自動化、即時轉寫與建置結果須查 `Docs/task.md` 的 build 11 紀錄，不沿用 build 10 的 175 個測試結果當作本次驗證。
+
 取消可能來自快捷鍵、Esc 或 overlay 關閉按鈕。改這段流程時，必須同步 `_cancelled`、timer 清理、錄音器清理、音效 / 背景音樂恢復、Riverpod 狀態與 overlay 顯示。
 
 ### 視窗與全域熱鍵

@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:zero_type/features/model_config/domain/entities/speech_connection.dart';
 
+import 'gemini_transcription_response.dart';
+
 typedef TranscriptionResult = ({
   String text,
   int? inputTokens,
@@ -273,26 +275,16 @@ class SpeechRecognitionService {
           ),
         );
 
-        final responseObj =
-            response.data?['response'] as Map<String, dynamic>? ??
-            response.data;
-        final candidates = responseObj?['candidates'] as List?;
-        if (candidates == null || candidates.isEmpty) {
-          throw Exception('Antigravity 轉譯失敗：無候選回應');
-        }
-
-        final parts = candidates[0]['content']?['parts'] as List?;
-        if (parts == null || parts.isEmpty) {
-          throw Exception('Antigravity 轉譯失敗：內容為空');
-        }
-
-        final text = (parts[0]['text'] as String? ?? '').trim();
+        final responseObj = response.data?['response'] ?? response.data;
+        final text = extractGeminiTranscriptionText(responseObj);
         final usageMeta =
             responseObj?['usageMetadata'] as Map<String, dynamic>?;
         final inputTokens = usageMeta?['promptTokenCount'] as int?;
         final outputTokens = usageMeta?['candidatesTokenCount'] as int?;
 
-        debugPrint('[AntigravityDirect] Success! text: $text');
+        debugPrint(
+          '[AntigravityDirect] Success! tokens: in=$inputTokens out=$outputTokens',
+        );
         return (
           text: text,
           inputTokens: inputTokens,
@@ -366,17 +358,7 @@ class SpeechRecognitionService {
         ),
       );
 
-      final candidates = response.data?['candidates'] as List?;
-      if (candidates == null || candidates.isEmpty) {
-        throw Exception('Gemini 轉譯失敗：無候選回應');
-      }
-
-      final parts = candidates[0]['content']?['parts'] as List?;
-      if (parts == null || parts.isEmpty) {
-        throw Exception('Gemini 轉譯失敗：內容為空');
-      }
-
-      final text = (parts[0]['text'] as String? ?? '').trim();
+      final text = extractGeminiTranscriptionText(response.data);
 
       final usageMeta =
           response.data?['usageMetadata'] as Map<String, dynamic>?;
@@ -386,7 +368,7 @@ class SpeechRecognitionService {
       debugPrint('[Gemini] Success! tokens: in=$inputTokens out=$outputTokens');
       return (text: text, inputTokens: inputTokens, outputTokens: outputTokens);
     } on DioException catch (e) {
-      debugPrint('[Gemini] DioException: ${e.message}');
+      debugPrint('[Gemini] DioException: ${e.type.name}');
       debugPrint('[Gemini] Status: ${e.response?.statusCode}');
       rethrow;
     }
