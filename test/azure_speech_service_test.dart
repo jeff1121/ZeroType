@@ -86,18 +86,28 @@ void main() {
       });
 
       expect(models.map((m) => m.id).toList(), [
-        'whisper-prod',
-        'gpt-4o',
         'custom-stt',
+        'gpt-4o',
+        'whisper-prod',
       ]);
-      expect(models.first.name, 'whisper-prod（whisper）');
+      expect(models.last.name, 'whisper-prod（whisper）');
       expect(models[1].name, 'gpt-4o');
     });
 
-    test('非預期 JSON 回傳空清單', () {
-      expect(catalog.parseAzureDeployments(null), isEmpty);
-      expect(catalog.parseAzureDeployments(<String, dynamic>{}), isEmpty);
-      expect(catalog.parseAzureDeployments('oops'), isEmpty);
+    test('非預期 JSON 為格式錯誤，合法空部署仍為空清單', () {
+      expect(
+        () => catalog.parseAzureDeployments(null),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => catalog.parseAzureDeployments(<String, dynamic>{}),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => catalog.parseAzureDeployments('oops'),
+        throwsA(isA<Exception>()),
+      );
+      expect(catalog.parseAzureDeployments({'data': []}), isEmpty);
     });
 
     test('部署清單 URL 使用固定 api-version 並正規化 endpoint', () {

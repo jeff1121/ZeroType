@@ -124,7 +124,13 @@ Windows 由 `windows/runner/channel_handler.cpp` 用 `SendInput` 實作 Ctrl+V�
 - `history.json` 與 `history_audio/`：保留的轉寫中繼資料與音檔。
 - `history_stats.json`：累計次數與花費。單筆刪除與過期清除不會減少它；`clearAll()` 才會重設。
 
-官方通道有使用中憑證時，模型下拉由 `OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`；Azure：依序嘗試 `{endpoint}/openai/deployments?api-version=2023-03-15-preview`、`/openai/models` 與 `/openai/v1/models`，不做 Whisper 過濾）。查不到或尚未有憑證時退回 `providers.json`；Azure 也提供內建 Whisper 選項，並可隨時手動輸入部署名稱，不以查詢失敗作為唯一入口。新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；後備清單才改 `providers.json`。
+官方通道有使用中憑證時，`OfficialModelCatalogService` 向官方 models API 查詢（Gemini：`/v1beta/models`；OpenAI：`/v1/models`；Antigravity：`v1internal:fetchAvailableModels`；Azure：依序嘗試部署／模型與 OpenAI 相容端點，不做 Whisper 過濾）。官方與 Proxy 查詢都回傳 `CatalogFetchResult`，合法空目錄是成功，失敗使用安全分類，不能在 HTTP 層以內建清單偽裝成功。
+
+`modelCatalogProvider` 統一管理來源、最後成功時間、更新中狀態、同來源記憶體快取與過期回應防護。查詢情境依 Provider、通道、endpoint 與憑證身分隔離；失敗先保留同來源成功目錄，再使用適合該通道／憑證方式的內建目錄。選 model 只保存選取，不重新初始化授權或查目錄。`AntigravityAuthSource.catalogIdentityFor(auth)` 將同一次授權結果綁定至不含原始 token、帳號或路徑的識別，正常續期保持穩定；只有 access token 且缺乏帳號／refresh token 時保守隔離不同 token。授權更新依憑證 fingerprint 合併，寫回前核對來源快照，過期請求不得覆寫已更換的授權。
+
+模型只按完整 ID 去重，名稱可以重複；UI 顯示名稱與 ID。Antigravity 依 `supportedMimeTypes` 判斷當前 `audio/mp4` 錄音格式，能力為支援／不支援／未確認；缺 metadata 不能當成不支援。明確不支援的模型不提供新選擇，已選則保留並警示。不要把目錄結果加入 `SpeechConnectionState.isReady`，不要自動改模型、通道或憑證。Azure 保留內建 Whisper 與手動部署入口，Proxy 保留自訂 ID。實作與驗證見 `Docs/task.md`。
+
+新增 Provider 或改轉寫分流時，仍要改 `speech_recognition_service.dart` 與 `model_pricing.dart`；不應因同名模型而改寫歷史 ID、價格映射或把不同模型合併。
 
 ## 產生程式與倉庫慣例
 

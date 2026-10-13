@@ -77,7 +77,7 @@ final class SpeechProviderControllerProvider
 }
 
 String _$speechProviderControllerHash() =>
-    r'6689bf05814d681b3b0a9ae9c1d1b07c2911a7d7';
+    r'f8c447491c2e33bb8de845bfbdb67e09c8142879';
 
 abstract class _$SpeechProviderController
     extends $AsyncNotifier<SpeechConnectionState> {
@@ -102,86 +102,3 @@ abstract class _$SpeechProviderController
     element.handleCreate(ref, build);
   }
 }
-
-@ProviderFor(proxyModels)
-final proxyModelsProvider = ProxyModelsProvider._();
-
-final class ProxyModelsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<AiModel>>,
-          List<AiModel>,
-          FutureOr<List<AiModel>>
-        >
-    with $FutureModifier<List<AiModel>>, $FutureProvider<List<AiModel>> {
-  ProxyModelsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'proxyModelsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$proxyModelsHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<AiModel>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<AiModel>> create(Ref ref) {
-    return proxyModels(ref);
-  }
-}
-
-String _$proxyModelsHash() => r'18886d28aaf9c87665d9ceb307f04eae4395dea7';
-
-/// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
-
-@ProviderFor(officialModels)
-final officialModelsProvider = OfficialModelsProvider._();
-
-/// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
-
-final class OfficialModelsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<AiModel>?>,
-          List<AiModel>?,
-          FutureOr<List<AiModel>?>
-        >
-    with $FutureModifier<List<AiModel>?>, $FutureProvider<List<AiModel>?> {
-  /// 官方通道即時目錄。尚未有可用憑證或查詢失敗時回傳 null，UI 改用內建清單。
-  OfficialModelsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: _noRetry,
-        name: r'officialModelsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$officialModelsHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<AiModel>?> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<AiModel>?> create(Ref ref) {
-    return officialModels(ref);
-  }
-}
-
-String _$officialModelsHash() => r'2c33026a64d71dfd2d09930b02124fcea60f3ae2';

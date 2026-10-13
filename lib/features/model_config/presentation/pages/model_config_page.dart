@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_type/core/constants/app_constants.dart';
+import '../controllers/model_catalog_controller.dart';
 import '../controllers/model_config_controller.dart';
 import '../../domain/entities/ai_provider.dart';
 import '../../domain/entities/speech_connection.dart';
@@ -142,10 +143,6 @@ class _SpeechConfigSection extends ConsumerWidget {
 
     return stateAsync.when(
       data: (state) {
-        final selectedProvider = providers.firstWhere(
-          (p) => p.id == state.providerId,
-          orElse: () => providers.first,
-        );
         final isGeminiOfficial =
             state.providerId == 'gemini' &&
             state.channel == SpeechChannel.official;
@@ -200,16 +197,10 @@ class _SpeechConfigSection extends ConsumerWidget {
               const SizedBox(height: 12),
               _AzureCredentials(state: state),
               const SizedBox(height: 24),
-              _ModelPicker(
-                state: state,
-                bundledModels: selectedProvider.models,
-              ),
+              _ModelPicker(state: state),
             ] else ...[
               const SizedBox(height: 24),
-              _ModelPicker(
-                state: state,
-                bundledModels: selectedProvider.models,
-              ),
+              _ModelPicker(state: state),
               const SizedBox(height: 24),
               const Text(
                 '使用中憑證',
@@ -279,10 +270,9 @@ class _ChoiceRow extends StatelessWidget {
 }
 
 class _ModelPicker extends ConsumerStatefulWidget {
-  const _ModelPicker({required this.state, required this.bundledModels});
+  const _ModelPicker({required this.state});
 
   final SpeechConnectionState state;
-  final List<AiModel> bundledModels;
 
   @override
   ConsumerState<_ModelPicker> createState() => _ModelPickerState();
@@ -291,54 +281,63 @@ class _ModelPicker extends ConsumerStatefulWidget {
 class _ModelPickerState extends ConsumerState<_ModelPicker> {
   bool _manualAzureInput = false;
 
+  void _selectModel(String? modelId) {
+    if (modelId == null) return;
+    final currentConnection = ref
+        .read(speechProviderControllerProvider)
+        .asData
+        ?.value;
+    if (currentConnection == null || currentConnection.modelId == modelId) {
+      return;
+    }
+    final currentCatalog = ref.read(modelCatalogProvider);
+    final canSelect = currentCatalog.models.any(
+      (model) =>
+          model.id == modelId &&
+          model.speechSupport != ModelSpeechSupport.unsupported,
+    );
+    if (!canSelect) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('模型目錄已變更，請重新選擇模型。')));
+      return;
+    }
+    ref.read(speechProviderControllerProvider.notifier).selectModel(modelId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    final bundledModels = widget.bundledModels;
-    final officialAsync = state.channel == SpeechChannel.official
-        ? ref.watch(officialModelsProvider)
-        : const AsyncData<List<AiModel>?>(null);
-    final proxyAsync = state.channel == SpeechChannel.proxy
-        ? ref.watch(proxyModelsProvider)
-        : const AsyncData<List<AiModel>>([]);
-    final liveOfficial = officialAsync.hasError
-        ? null
-        : officialAsync.asData?.value;
-    final catalog = state.channel == SpeechChannel.official
-        ? (liveOfficial ?? bundledModels)
-        : (proxyAsync.asData?.value ?? const <AiModel>[]);
+    final catalog = ref.watch(modelCatalogProvider);
     final selectedId = state.modelId;
-    final models = [
-      ...catalog,
-      if (selectedId != null &&
-          selectedId.isNotEmpty &&
-          !catalog.any((m) => m.id == selectedId))
-        AiModel(id: selectedId, name: selectedId),
-    ];
-    final isLoading = officialAsync.isLoading || proxyAsync.isLoading;
-    final attemptedOfficial = state.isAzure
-        ? (state.activeApiKey != null &&
-              state.activeApiKey!.isNotEmpty &&
-              state.azureEndpoint != null &&
-              state.azureEndpoint!.isNotEmpty)
-        : switch (state.activeCredentialMethod) {
-            CredentialMethod.apiKey =>
-              (state.activeApiKey != null && state.activeApiKey!.isNotEmpty),
-            CredentialMethod.antigravityOauth => state.antigravityAvailable,
-            null => false,
-          };
-    final showOfficialFallback =
-        state.channel == SpeechChannel.official &&
-        !officialAsync.isLoading &&
-        liveOfficial == null &&
-        attemptedOfficial;
+    final isMissingSelection =
+        selectedId != null &&
+        selectedId.isNotEmpty &&
+        !catalog.models.any((model) => model.id == selectedId);
+    final byId = <String, AiModel>{
+      for (final model in catalog.models)
+        if (model.speechSupport != ModelSpeechSupport.unsupported ||
+            model.id == selectedId)
+          model.id: model,
+      if (isMissingSelection)
+        selectedId: AiModel(id: selectedId, name: selectedId),
+    };
+    final models = byId.values.toList()
+      ..sort((first, second) {
+        final byName = first.name.toLowerCase().compareTo(
+          second.name.toLowerCase(),
+        );
+        return byName != 0 ? byName : first.id.compareTo(second.id);
+      });
+    final selectedModel = byId[selectedId];
+    final unsupportedModels = catalog.models
+        .where((model) => model.speechSupport == ModelSpeechSupport.unsupported)
+        .toList();
+    final unsupportedCount = unsupportedModels.length;
+    final unknownCount = catalog.models
+        .where((model) => model.speechSupport == ModelSpeechSupport.unknown)
+        .length;
     final isManualMode = state.isAzure && (_manualAzureInput || models.isEmpty);
-    final showCatalogError = state.channel == SpeechChannel.official
-        ? (officialAsync.hasError || showOfficialFallback)
-        : proxyAsync.hasError;
-    final catalogHint = state.isAzure
-        ? '部署清單暫時無法自動取得，已提供預設選項，您亦可手動指定部署名稱'
-        : '模型目錄暫時查不到，仍可使用上次選擇的模型';
     final pickerLabel = state.isAzure ? '選擇部署' : '選擇模型';
 
     return Column(
@@ -367,7 +366,7 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
                 fontSize: 12,
               ),
             ),
-            if (isLoading) ...[
+            if (catalog.isRefreshing) ...[
               const SizedBox(width: 12),
               const SizedBox(
                 width: 14,
@@ -375,67 +374,31 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ],
-            if (state.channel == SpeechChannel.official ||
-                state.channel == SpeechChannel.proxy) ...[
-              const Spacer(),
-              IconButton(
-                tooltip: '更新模型目錄',
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (state.channel == SpeechChannel.official) {
-                          ref.invalidate(officialModelsProvider);
-                          try {
-                            final res = await ref.read(
-                              officialModelsProvider.future,
-                            );
-                            if (!context.mounted) return;
-                            final count = res?.length ?? 0;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('已重新取得模型目錄，共 $count 個可用模型'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('更新模型目錄失敗：$e'),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        } else {
-                          ref.invalidate(proxyModelsProvider);
-                          try {
-                            final res = await ref.read(
-                              proxyModelsProvider.future,
-                            );
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '已重新取得 Proxy 模型目錄，共 ${res.length} 個模型',
-                                ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('更新 Proxy 模型目錄失敗：$e'),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                icon: const Icon(Icons.refresh, size: 18),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
+            const Spacer(),
+            IconButton(
+              key: const ValueKey('reload-model-catalog'),
+              tooltip: '更新模型目錄',
+              onPressed: catalog.isRefreshing
+                  ? null
+                  : () async {
+                      final result = await ref
+                          .read(modelCatalogProvider.notifier)
+                          .refresh();
+                      if (!context.mounted || result == null) return;
+                      if (result.scopeKey !=
+                          ref.read(modelCatalogProvider).scopeKey) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result.refreshMessage),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    },
+              icon: const Icon(Icons.refresh, size: 18),
+              visualDensity: VisualDensity.compact,
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -467,15 +430,11 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
           ],
         ] else ...[
           _ModelDropdown(
+            key: ValueKey(catalog.scopeKey),
             models: models,
             selectedModelId: selectedId,
-            onChanged: (val) {
-              if (val != null) {
-                ref
-                    .read(speechProviderControllerProvider.notifier)
-                    .selectModel(val);
-              }
-            },
+            missingModelId: isMissingSelection ? selectedId : null,
+            onChanged: _selectModel,
           ),
           if (state.isAzure) ...[
             const SizedBox(height: 6),
@@ -491,18 +450,111 @@ class _ModelPickerState extends ConsumerState<_ModelPicker> {
             ),
           ],
         ],
-        if (showCatalogError)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              catalogHint,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
-              ),
-            ),
+        const SizedBox(height: 8),
+        _CatalogStatus(catalog: catalog),
+        if (unsupportedCount > 0) _UnsupportedModels(models: unsupportedModels),
+        if (catalog.models.isNotEmpty &&
+            unsupportedCount == catalog.models.length)
+          const _CatalogNote(text: '此目錄沒有支援目前錄音格式的模型。'),
+        if (unknownCount > 0)
+          _CatalogNote(text: '$unknownCount 個模型的轉寫能力未驗證，仍可選取。'),
+        if (isMissingSelection)
+          const _CatalogNote(text: '上次選取的模型未列於目前目錄，已保留原設定。'),
+        if (selectedModel?.speechSupport == ModelSpeechSupport.unsupported)
+          _CatalogNote(
+            text:
+                '目前選取的模型不支援轉寫：${selectedModel!.supportReason ?? '不支援目前錄音格式'}。請改選其他模型；原設定仍保留。',
+            isWarning: true,
           ),
       ],
+    );
+  }
+}
+
+class _UnsupportedModels extends StatelessWidget {
+  const _UnsupportedModels({required this.models});
+
+  final List<AiModel> models;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        dense: true,
+        title: Text(
+          '${models.length} 個模型不支援目前錄音格式，已排除一般選項。',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        children: models.map((model) {
+          return ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(model.name),
+            subtitle: Text(
+              [
+                if (model.id != model.name) model.id,
+                model.supportReason ?? '不支援目前錄音格式',
+              ].join('\n'),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _CatalogStatus extends StatelessWidget {
+  const _CatalogStatus({required this.catalog});
+
+  final ModelCatalogState catalog;
+
+  @override
+  Widget build(BuildContext context) {
+    final timestamp = catalog.fetchedAt?.toLocal();
+    final source = switch (catalog.source) {
+      CatalogSource.remote => '遠端目錄',
+      CatalogSource.cache => '上次成功取得的目錄',
+      CatalogSource.bundled => '內建目錄',
+      CatalogSource.none => '尚無目錄',
+    };
+    final timeLabel = timestamp == null
+        ? ''
+        : ' · 最後成功：${timestamp.year}/${timestamp.month.toString().padLeft(2, '0')}/${timestamp.day.toString().padLeft(2, '0')} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (catalog.statusMessage.isNotEmpty)
+          _CatalogNote(
+            text: catalog.statusMessage,
+            isWarning: catalog.failure != null,
+          ),
+        _CatalogNote(text: '清單來源：$source$timeLabel'),
+      ],
+    );
+  }
+}
+
+class _CatalogNote extends StatelessWidget {
+  const _CatalogNote({required this.text, this.isWarning = false});
+
+  final String text;
+  final bool isWarning;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          color: isWarning ? colors.error : colors.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
@@ -855,14 +907,17 @@ class _TextSaveFieldState extends State<_TextSaveField> {
 
 class _ModelDropdown extends StatelessWidget {
   const _ModelDropdown({
+    super.key,
     required this.models,
     required this.selectedModelId,
     required this.onChanged,
+    this.missingModelId,
   });
 
   final List<AiModel> models;
   final String? selectedModelId;
   final ValueChanged<String?> onChanged;
+  final String? missingModelId;
 
   @override
   Widget build(BuildContext context) {
@@ -877,16 +932,90 @@ class _ModelDropdown extends StatelessWidget {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
+          key: const ValueKey('speech-model-dropdown'),
           value: models.any((m) => m.id == selectedModelId)
               ? selectedModelId
               : null,
           isExpanded: true,
+          itemHeight: MediaQuery.textScalerOf(
+            context,
+          ).scale(88).clamp(kMinInteractiveDimension, double.infinity),
+          menuMaxHeight: (MediaQuery.sizeOf(context).height * 0.6).clamp(
+            0.0,
+            420.0,
+          ),
           hint: const Text('選擇一個模型'),
           items: models.map((m) {
-            return DropdownMenuItem(value: m.id, child: Text(m.name));
+            return DropdownMenuItem(
+              value: m.id,
+              enabled: m.speechSupport != ModelSpeechSupport.unsupported,
+              child: _ModelOption(
+                model: m,
+                isMissingSelection: m.id == missingModelId,
+              ),
+            );
           }).toList(),
-          onChanged: onChanged,
+          onChanged:
+              models.any(
+                (model) =>
+                    model.speechSupport != ModelSpeechSupport.unsupported,
+              )
+              ? onChanged
+              : null,
         ),
+      ),
+    );
+  }
+}
+
+class _ModelOption extends StatelessWidget {
+  const _ModelOption({required this.model, required this.isMissingSelection});
+
+  final AiModel model;
+  final bool isMissingSelection;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final badge = isMissingSelection
+        ? '上次選取，未列於目前目錄'
+        : switch (model.speechSupport) {
+            ModelSpeechSupport.supported => null,
+            ModelSpeechSupport.unsupported => '不支援目前錄音格式',
+            ModelSpeechSupport.unknown => '轉寫能力未驗證',
+          };
+    return Tooltip(
+      message: [
+        model.name,
+        if (model.name != model.id) model.id,
+        ?badge,
+        ?model.supportReason,
+      ].join('\n'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(model.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (model.name != model.id)
+            Text(
+              model.id,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
+          if (badge != null)
+            Text(
+              badge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: model.speechSupport == ModelSpeechSupport.unsupported
+                    ? colors.error
+                    : colors.onSurfaceVariant,
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -1,4 +1,4 @@
-> **文件定位（2026-09-29 核對）**：以下為原始產品規劃，保留歷史內容，不代表目前全部功能已實作。現行版本沒有獨立 AI 精修階段；API Key 目前存於 SharedPreferences，不是安全儲存。架構以實作與 `CLAUDE.md` 為準；本次 Windows 視窗／熱鍵修復規格見 `Plan.md`，驗證紀錄見 `Tasks.md` 第十一節。
+> **文件定位（2026-10-13 核對）**：以下為原始產品規劃，保留歷史內容，不代表目前全部功能已實作。現行版本沒有獨立 AI 精修階段；API Key 目前存於 SharedPreferences，不是安全儲存。架構以實作與 `CLAUDE.md` 為準；模型目錄改善與驗收見 [task.md](task.md)，Windows 視窗／熱鍵歷史規格見 `Plan.md` 與 `Tasks.md` 第十一節。
 
 # 角色
 你是一名熟悉 flutter 的開發者
@@ -61,5 +61,6 @@
 - **無獨立「AI 精修」階段**：目前僅有語音辨識流程，未提供獨立的 Gemini 文字精修 Section（字典檔仍會併入語音辨識 Prompt）。
 - **憑證儲存**：API Key 與各項設定存於 `SharedPreferences`（非安全儲存），非原規劃的 `flutter_secure_storage`。
 - **雙通道與多元憑證**：語音辨識已擴充為「官方 / Proxy」雙通道；官方憑證方式含 **API Key** 與 **Antigravity OAuth**（Gemini OAuth 已於 v1.2.0 移除）。
-- **即時模型目錄**：官方通道有憑證時會向 Provider 官方 API 查詢可用模型，查不到時退回 `providers.json`。
+- **即時模型目錄**：以原始 ID 區分同名模型，名稱與 ID 一併呈現。目錄來源、合法空結果與查詢失敗分開；失敗先使用同來源記憶體快取，再使用適合該通道的內建目錄，保留已選 ID 且不自動改選。
+- **語音能力**：Antigravity 依目前錄音請求的 `audio/mp4` 判斷支援／不支援／未確認；缺 metadata 不會排除模型。明確不支援者不提供新選擇，既有選取保留並警示，目錄不成為轉寫前置閘門。Proxy 自訂別名與 Azure 手動部署保持相容。
 - **Azure OpenAI Whisper**：第三個語音辨識 Provider（僅官方通道，使用者填 Endpoint / API Key / API Version；model id 為部署名稱）。詳見 `Docs/Tasks.md` 第九節。

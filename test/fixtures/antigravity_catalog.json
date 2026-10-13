@@ -1,0 +1,47 @@
+{
+  "models": {
+    "gemini-2.5-flash": {
+      "displayName": "Gemini 3.5 Flash Lite",
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "gemini-2.5-flash-thinking": {
+      "displayName": "Gemini 3.5 Flash Lite",
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "gemini-2.5-flash-lite": {
+      "displayName": "Gemini 3.5 Flash Lite",
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "gemini-3.1-flash-lite": {
+      "displayName": "Gemini 3.5 Flash Lite",
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "gemini-3.5-flash-lite": {
+      "displayName": "Gemini 3.5 Flash Lite",
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "claude-sonnet-4-6": {
+      "displayName": "Claude Sonnet 4.6 (Thinking)",
+      "supportedMimeTypes": {
+        "image/jpeg": true, "image/png": true, "image/webp": true,
+        "image/heic": true, "image/heif": true,
+        "video/jpeg2000": true, "video/videoframe/jpeg2000": true
+      }
+    },
+    "claude-opus-4-6-thinking": {
+      "displayName": "Claude Opus 4.6 (Thinking)",
+      "supportedMimeTypes": {
+        "image/jpeg": true, "image/png": true, "image/webp": true,
+        "image/heic": true, "image/heif": true,
+        "video/jpeg2000": true, "video/videoframe/jpeg2000": true
+      }
+    },
+    "gemini-3.8-flash-tiered": {
+      "supportedMimeTypes": {"audio/mp4": true, "audio/mpeg": true}
+    },
+    "gemini-3.1-flash-image": {"displayName": "Gemini 3.1 Flash Image"},
+    "gpt-oss-120b-medium": {"displayName": "GPT OSS 120B"},
+    "tab_flash_lite_preview": {"displayName": "Tab Internal"},
+    "chat_20706": {"displayName": "Chat Internal"}
+  }
+}

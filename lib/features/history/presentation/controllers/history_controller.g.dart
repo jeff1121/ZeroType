@@ -125,7 +125,7 @@ final class HistoryControllerProvider
   HistoryController create() => HistoryController();
 }
 
-String _$historyControllerHash() => r'57f40d89c0ede9d4646558a5314850fb8dc7e336';
+String _$historyControllerHash() => r'21ada3940cc9792456ef73ddd3f9d0ada2bb312f';
 
 abstract class _$HistoryController
     extends $AsyncNotifier<List<TranscriptionRecord>> {

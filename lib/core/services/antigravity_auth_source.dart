@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,7 +18,61 @@ class AntigravityAuthSource {
 
   final Dio _dio;
   final File? _credentialFileOverride;
-  Future<AntigravityAuthData?>? _refreshing;
+  final Map<String, Future<AntigravityAuthData?>> _refreshing = {};
+  final Map<String, String> _catalogIdentities = <String, String>{};
+  final Map<String, String> _authCatalogIdentities = <String, String>{};
+  String? _catalogIdentity;
+
+  /// 最近一次有效授權的目錄隔離識別，不包含原始 token、帳號或檔案路徑。
+  /// 短期 token 更新與本來源執行的 refresh token 輪替不改變此識別。
+  String? get catalogIdentity => _catalogIdentity;
+
+  /// 綁定某次回傳授權的識別，避免並行讀取另一帳號改變最近一次識別。
+  /// 索引只保存 token 與 project 的雜湊，不另行保存原始 token。
+  String? catalogIdentityFor(AntigravityAuthData auth) =>
+      _authCatalogIdentities[_authFingerprint(auth)];
+
+  String _authFingerprint(AntigravityAuthData auth) => sha256
+      .convert(utf8.encode(jsonEncode([auth.accessToken, auth.projectId])))
+      .toString();
+
+  AntigravityAuthData _rememberAuth(AntigravityAuthData auth, String identity) {
+    _authCatalogIdentities[_authFingerprint(auth)] = identity;
+    _catalogIdentity = identity;
+    return auth;
+  }
+
+  String _snapshotFingerprint(Map<String, dynamic> credential) =>
+      sha256.convert(utf8.encode(jsonEncode(credential))).toString();
+
+  String _credentialFingerprint(
+    File file,
+    Map<String, dynamic> credential,
+    String projectId,
+  ) => sha256
+      .convert(
+        utf8.encode(
+          jsonEncode([
+            file.absolute.path,
+            credential['email'],
+            projectId,
+            credential['refresh_token'] ??
+                (credential['email'] == null
+                    ? credential['access_token']
+                    : null),
+          ]),
+        ),
+      )
+      .toString();
+
+  String _identityFor(
+    File file,
+    Map<String, dynamic> credential,
+    String projectId,
+  ) {
+    final fingerprint = _credentialFingerprint(file, credential, projectId);
+    return _catalogIdentities.putIfAbsent(fingerprint, () => fingerprint);
+  }
 
   /// Antigravity 原生 OAuth Client
   static String get antigravityClientId => _xor([
@@ -316,22 +371,40 @@ class AntigravityAuthSource {
 
       final fresh = _freshAccessToken(parsed);
       if (fresh != null) {
-        return (accessToken: fresh, projectId: projectId);
+        return _rememberAuth((
+          accessToken: fresh,
+          projectId: projectId,
+        ), _identityFor(file, parsed, projectId));
       }
 
       final refresh = parsed['refresh_token'] as String?;
       if (refresh != null && refresh.isNotEmpty) {
-        final result = await (_refreshing ??= _refreshAndWrite(
-          file,
-          parsed,
-          refresh,
-          clientId,
-          clientSecret,
-          projectId,
-        ).whenComplete(() => _refreshing = null));
-        if (result != null) return result;
+        final identity = _identityFor(file, parsed, projectId);
+        final fingerprint = _credentialFingerprint(file, parsed, projectId);
+        try {
+          final result = await _refreshing.putIfAbsent(
+            fingerprint,
+            () =>
+                _refreshAndWrite(
+                  file,
+                  parsed,
+                  refresh,
+                  clientId,
+                  clientSecret,
+                  projectId,
+                  identity,
+                ).whenComplete(() {
+                  _refreshing.remove(fingerprint);
+                }),
+          );
+          if (result != null) return _rememberAuth(result, identity);
+        } on _CredentialSnapshotChanged {
+          // 晚到的舊授權不改寫目前帳號，也不自動改用另一份憑證。
+          return null;
+        }
       }
     }
+    _catalogIdentity = null;
     return null;
   }
 
@@ -347,7 +420,7 @@ class AntigravityAuthSource {
       if (json is Map) return Map<String, dynamic>.from(json);
       return null;
     } catch (e) {
-      debugPrint('[AntigravityAuth] 讀取本機登入失敗：$e');
+      debugPrint('[AntigravityAuth] 讀取本機登入失敗：${e.runtimeType}');
       return null;
     }
   }
@@ -379,7 +452,9 @@ class AntigravityAuthSource {
     String clientId,
     String clientSecret,
     String projectId,
+    String identity,
   ) async {
+    final String expectedSnapshot = _snapshotFingerprint(current);
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         tokenUri,
@@ -403,24 +478,39 @@ class AntigravityAuthSource {
           .add(Duration(seconds: expiresIn is num ? expiresIn.toInt() : 3600))
           .millisecondsSinceEpoch;
 
-      current['access_token'] = access;
-      if (current.containsKey('expiry_date')) {
-        current['expiry_date'] = expiryMs;
+      final Map<String, dynamic> updated = {...current, 'access_token': access};
+      if (updated.containsKey('expiry_date')) {
+        updated['expiry_date'] = expiryMs;
       }
-      if (current.containsKey('expired')) {
-        current['expired'] = now
+      if (updated.containsKey('expired')) {
+        updated['expired'] = now
             .add(Duration(seconds: expiresIn is num ? expiresIn.toInt() : 3600))
             .toIso8601String();
       }
       final rotatedRefresh = data?['refresh_token'];
       if (rotatedRefresh is String && rotatedRefresh.isNotEmpty) {
-        current['refresh_token'] = rotatedRefresh;
+        updated['refresh_token'] = rotatedRefresh;
       }
-      await file.writeAsString(jsonEncode(current));
+      final Map<String, dynamic>? latest = file.existsSync()
+          ? await _readFile(file)
+          : null;
+      if (latest == null || _snapshotFingerprint(latest) != expectedSnapshot) {
+        throw const _CredentialSnapshotChanged();
+      }
+      await file.writeAsString(jsonEncode(updated));
+      // refresh token 輪替後，下次讀檔仍屬於原本的授權情境。
+      _catalogIdentities[_credentialFingerprint(file, updated, projectId)] =
+          identity;
       return (accessToken: access, projectId: projectId);
+    } on _CredentialSnapshotChanged {
+      rethrow;
     } catch (e) {
-      debugPrint('[AntigravityAuth] 更新授權失敗：$e');
+      debugPrint('[AntigravityAuth] 更新授權失敗：${e.runtimeType}');
       return null;
     }
   }
+}
+
+class _CredentialSnapshotChanged implements Exception {
+  const _CredentialSnapshotChanged();
 }
