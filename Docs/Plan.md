@@ -1,6 +1,6 @@
 # ZeroType — Windows 視窗與熱鍵修復計畫
 
-> 文件定位（2026-10-14 核對）：本文件保留 Windows 視窗／熱鍵的歷史修復計畫。當前原始碼目標為 `1.5.5+13`，模型目錄、Gemini 多段轉寫、ID 選單與收合高度調整請依 [task.md](task.md)；本文件的舊分支、版本及範圍限制不適用於目前工作。原始碼版本不代表同版安裝檔已發布。
+> 文件定位（2026-10-15 核對）：本文件保留 Windows 視窗／熱鍵的歷史修復計畫。`1.5.5+13` 的功能修正已經 PR #3 合併；使用者另於 2026-10-15 授權正式發布 `v1.5.5`，進度與驗收見 [task.md](task.md)。下方舊分支、版本及「不發布」限制屬歷史規格，不適用於本輪正式發布。
 
 > 狀態：原規格已實作，2026-09-29 複查補正並準備 v1.5.3 PR；驗證範圍與限制見 `Tasks.md` 第十一節及 `Windows-Hotkey-Audit.md`。本文件原寫於 2026-09-24，以下保留當時根因與鎖定決定。
 > 歷史工作細項在 `Docs/Tasks.md` 第十一節。當時兩份文件衝突時，以本文件的「已鎖定決定」為準；這項優先序只適用於該次 Windows／熱鍵修復，不覆寫後續使用者要求或現行實作。
@@ -10,7 +10,7 @@
 
 `WindowChromePolicy` 與 `main.dart` 已實作 Windows 原生標題列、macOS 隱藏標題列，以及兩平台 `setPreventClose(true)` 後關閉只隱藏。`HotkeyService` 錄製期間只暫存候選，`resume` 成功註冊後才提交新組合；Windows 走 App 自有 `RegisterHotKey` channel，macOS 保留 `hotkey_manager`。下方「現況／要改成」保留的是修復前分析，不表示現在仍存在這些缺陷。
 
-2026-09-29 的測試數、簽章與使用者人工回報僅適用於當時紀錄，不能推定 `1.5.5+13` 已完成 Windows 實機驗證。最新測試、建置與 [PR #3](https://github.com/jeff1121/ZeroType/pull/3) 交付狀態統一見 [task.md](task.md)。
+2026-09-29 的測試數、簽章與使用者人工回報僅適用於當時紀錄，不能推定 `1.5.5+13` 已完成 Windows 實機驗證。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 已合併，正式發布與最新驗收統一見 [task.md](task.md)。
 
 ## 2026-09-29 複查與發布補充
 

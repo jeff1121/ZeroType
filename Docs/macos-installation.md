@@ -1,6 +1,6 @@
 # macOS 安裝說明
 
-> 2026-10-14 已核對 [.github/workflows/release.yml](../.github/workflows/release.yml) 與 [verify_macos_release.sh](../scripts/verify_macos_release.sh)。目前開發目標 `1.5.5+13` 的驗證與交付見 [task.md](task.md)；此版本號不表示已發布同版 DMG／ZIP。安裝時以 GitHub Releases 實際提供的產物為準。
+> 2026-10-15 已核對 [.github/workflows/release.yml](../.github/workflows/release.yml) 與 [verify_macos_release.sh](../scripts/verify_macos_release.sh)。`1.5.5+13` 的正式下載入口為 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5)，驗收紀錄見 [task.md](task.md)。附件與發布狀態以版本頁實際結果為準。
 
 ## 目前的簽章狀態
 
