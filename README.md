@@ -6,7 +6,7 @@ ZeroType 是以繁體中文與台灣中英混用情境為目標的桌面語音�
 
 **可使用自備 API Key；Gemini 官方通道也支援 Antigravity OAuth 登入。程式碼完整開源。**
 
-目前原始碼版本為 **`1.5.5+13`（待發佈）**。截至 2026-10-14，最新已發佈版本仍為 [v1.5.3](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.3)；`1.5.4+10`／`+11`／`+12` 均為同一 PR 的未發佈測試 build，不是 GitHub Release。分支推送與 PR 更新不會自動更新下載頁。
+目前版本為 **v1.5.5（`1.5.5+13`）**。macOS 與 Windows 的下載入口見 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5)，下載附件與發佈狀態以該頁為準。先前 `1.5.4+10`／`+11`／`+12` 均為同一 PR 的未發佈測試 build，不是 GitHub Release。
 
 ---
 
@@ -50,7 +50,7 @@ ZeroType 是以繁體中文與台灣中英混用情境為目標的桌面語音�
 | **格式口語還原** | 要求把「大寫」、「小寫」、「空格」、「底線」、「驚嘆號」等描述還原為字元 |
 | **空輸入約束** | 提示詞要求空輸入不產生文字；轉寫結果為空時，App 顯示「未能辨識出任何文字」 |
 
-錄音流程沒有在送出前以語音活動偵測（VAD）阻擋靜音；音量資料用於畫面顯示，因此不能把上述空輸入指令視為本機靜音保護。另已觀察到內建長提示詞搭配全英文合成音訊時，可能翻譯或混入提示詞範例；此品質問題尚未解決，多段回應解析修復不代表模型輸出必然正確。
+錄音流程沒有在送出前以語音活動偵測（VAD）阻擋靜音；音量資料用於畫面顯示，因此不能把上述空輸入指令視為本機靜音保護。
 
 ### 📖 自訂字典
 
@@ -98,11 +98,18 @@ Gemini 官方通道也可選擇「Antigravity OAuth」，由 App 發起 Google �
 
 ## 🚀 快速開始
 
-### 方法一：直接下載 macOS 版本
+### 方法一：下載桌面版本
+
+至 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 依平台選擇附件；下載與發佈狀態以版本頁為準：
+
+- **macOS**：`ZeroType-macOS.dmg` 或 `ZeroType-macOS-arm64.zip`，搭配 `SHA256SUMS.txt` 核對。ZIP 名稱不代表產物僅含單一架構。
+- **Windows x64**：`ZeroType-Windows-x64.zip`，搭配 `SHA256SUMS-Windows.txt` 核對；解壓後執行內附程式。
+
+macOS 安裝方式：
 
 > macOS 發布工作流程使用 `ZeroType` 自簽章憑證，並非 Apple Developer ID，也未經 notarization。macOS 可能阻擋首次開啟，請先核對下載來源與雜湊，再依系統提示允許執行。
 
-1. 前往 [Releases](https://github.com/jeff1121/ZeroType/releases) 下載同版 `.dmg` 與 `SHA256SUMS.txt`，先依下方指令核對雜湊。
+1. 前往 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 下載同版 `.dmg` 與 `SHA256SUMS.txt`，先依下方指令核對雜湊。
 2. 開啟 `.dmg`，將 **Zero Type.app** 拖入 `/Applications`。
 3. 開啟 App；若系統阻擋，於「系統設定 → 隱私權與安全性」依提示選擇「仍要打開」。
 4. 首次執行時，依提示授予麥克風與輔助使用權限，供錄音及模擬貼上使用。
@@ -131,7 +138,7 @@ sed 's|  release/|  |' SHA256SUMS.txt | shasum -a 256 -c -
 
 ### 方法二：從原始碼 Build（進階）
 
-以下指令建置目前 checkout 的版本；待發佈的 `1.5.5+13` 改動見 [PR #3](https://github.com/jeff1121/ZeroType/pull/3)，不表示 `master` 或下載頁已更新。
+以下指令建置目前 checkout 的版本。模型目錄與轉寫修補已由 [PR #3](https://github.com/jeff1121/ZeroType/pull/3) 於 2026-10-14 00:54（台北時間）合併至 `master`，合併 commit 為 `b4164bd`。重現正式版本時，請使用 [v1.5.5](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 對應的 tag。
 
 ```bash
 git clone https://github.com/jeff1121/ZeroType.git
@@ -161,7 +168,7 @@ flutter test
 
 ## 📜 版本更新紀錄 (Release Notes)
 
-### [v1.5.5] - 當前原始碼版本（`1.5.5+13`，待發佈）
+### [v1.5.5](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) - 當前版本（`1.5.5+13`）
 
 - **更緊湊的模型欄位**：收合外框高度較原先縮短 40%。在 100% 字級下，由 64 邏輯像素選項高度加 2 像素外框所得的 66，調整為 `(64 + 2) × 0.6 = 39.6`；展開選項仍為 64，模型 ID 與能力提示的字級不縮小，並保留系統文字縮放。
 - **修正 Gemini 空文字結果**：Antigravity 可能先回傳空白思考段落，再回傳逐字稿。Gemini 共用解析會依序合併第一個候選的可見文字，略過思考段落；被封鎖或截斷的回應顯示明確錯誤，避免誤當成功。音訊 payload、提示詞、使用中模型與請求重試策略維持既有行為。
@@ -171,8 +178,8 @@ flutter test
 - **來源隔離與更新競態**：同來源記憶體快取、進行中更新合併、過期回應與通知防護；選模型不再觸發額外目錄請求。
 - **授權來源一致性**：不同憑證的並行更新不共用結果，寫回前比對來源快照，避免較舊的授權更新覆蓋新帳號。
 - **本版本機驗證**：`1.5.5+13` 已完成格式檢查（82 檔、0 變更）、靜態分析與完整 213 項測試。macOS Release 建置及驗證腳本通過，產物為 `1.5.5 (13)`、49.9 MB、最低 macOS 12.0，包含 x86_64／arm64；此次本機簽章為 ad-hoc，不是發布工作流程的自簽憑證產物。
-- **驗證邊界與已知限制**：前期修補已用同一模型完成中文合成語音＋內建提示詞、英文合成語音＋簡短指令的服務層即時轉寫；未使用原使用者錄音，也不是完整麥克風到貼上的桌面實測。內建長提示詞處理全英文音訊時仍有品質不一致，不宣稱已解決。Windows 本版 CI 與未完成人工驗證見 [工作清單](Docs/task.md) 及 [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks)，不沿用舊提交的結果宣稱新版通過。
-- **文件與版本**：整合未發佈測試 build 的修正，升為 `1.5.5+13`。校正 macOS 12.0 部署目標、Windows Overlay／貼上差異、提示詞能力界線、API Key 儲存及工具鏈說明。此次提交與 PR 更新不建立 tag、不合併 PR，也不發布安裝檔。
+- **驗證範圍**：前期修補已用同一模型完成中文合成語音＋內建提示詞、英文合成語音＋簡短指令的服務層即時轉寫；未使用原使用者錄音，也不是完整麥克風到貼上的桌面實測，更不代表每個模型都已實測。平台驗證與未完成人工驗證見 [工作清單](Docs/task.md)。
+- **文件與版本**：整合未發佈測試 build 的修正，升為 `1.5.5+13`。校正 macOS 12.0 部署目標、Windows Overlay／貼上差異、提示詞能力界線、API Key 儲存及工具鏈說明。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 已合併；macOS／Windows 產物與正式發佈狀態見 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5)。
 
 ### [v1.5.4] - 未發佈測試 build 紀錄
 

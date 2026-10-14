@@ -1,6 +1,6 @@
-# ZeroType v1.5.5（待發佈）
+# ZeroType v1.5.5
 
-原始碼版本為 `1.5.5+13`，整合模型目錄、Gemini 多段轉寫與模型欄位調整。截至 2026-10-14，最新已發佈版本仍為 [v1.5.3](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.3)。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 尚未合併；先前 `1.5.4+10`／`+11`／`+12` 均為未發佈的測試 build，沒有 v1.5.4 GitHub Release。
+版本為 `1.5.5+13`，整合模型目錄、Gemini 多段轉寫與模型欄位調整。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 已於 2026-10-14 00:54（台北時間）合併至 `master`，合併 commit 為 `b4164bd`。macOS／Windows 下載與發佈狀態以 [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 為準。先前 `1.5.4+10`／`+11`／`+12` 均為未發佈的測試 build，沒有 v1.5.4 GitHub Release。
 
 ## 模型欄位與識別
 
@@ -35,7 +35,7 @@
 - 空輸入約束不是本機 VAD 靜音閘門；歷史花費採內建價格與用量估算，不是即時報價或供應商帳單。
 - SHA-256 驗證說明配合清單中的 `release/` 路徑前綴，並區分單檔對照與 DMG／ZIP 同目錄核對。
 
-## 驗證紀錄與已知限制
+## 驗證紀錄與範圍
 
 `1.5.5+13` 本機檢查已完成：
 
@@ -45,10 +45,11 @@
 
 前期修補於 2026-10-14 使用合成語音，在 `gemini-3.5-flash-lite` 的 Antigravity 回應精確重現空白思考段落與後續可見文字。修正後，中文合成音訊＋未修改的內建提示詞、英文合成音訊＋簡短指令，均完成服務層即時轉寫驗證。原使用者錄音未讀取、未上傳；這些檢查沒有操作實體麥克風或剪貼簿，不是完整桌面流程實測，也不代表每個模型皆已實測。
 
-內建長範例提示詞搭配全英文合成音訊時，仍曾出現翻譯或混入範例內容。此模型／提示詞品質問題尚未解決，沒有因修復多段解析而宣稱排除。
+`1.5.4+11` 的 212 項測試、`1.5.4+12` 的 213 項測試及各自 macOS 建置，保留為先前測試 build 的歷史；上列本版結果已針對 `1.5.5+13` 重新執行。詳細紀錄見 [Docs/task.md](Docs/task.md)。發佈建置狀態見 [Release 工作流程](https://github.com/jeff1121/ZeroType/actions/workflows/release.yml)；widget 平台模擬與 CI 編譯不等同 Windows 實機操作，未完成的人工驗證仍列於工作清單。
 
-`1.5.4+11` 的 212 項測試、`1.5.4+12` 的 213 項測試及各自 macOS 建置，保留為先前測試 build 的歷史；上列本版結果已針對 `1.5.5+13` 重新執行。詳細紀錄見 [Docs/task.md](Docs/task.md)。Windows 本版 CI 結果以 [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 對應提交為準，不沿用舊提交的結果宣稱本版通過；widget 平台模擬與 CI 編譯亦不等同 Windows 實機操作，未完成的人工驗證仍列於工作清單。
+## 下載與發佈狀態
 
-## 發佈狀態
-
-- 此次提交、推送與 PR 更新不建立 tag、不合併 PR，也不發布 GitHub Release；下載產物以實際 Release 為準。
+- [v1.5.5 版本頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 為正式下載入口；附件與發佈狀態以該頁為準。
+- macOS：`ZeroType-macOS.dmg`、`ZeroType-macOS-arm64.zip` 與 `SHA256SUMS.txt`。ZIP 檔名不等同只含單一架構，實際架構以產物驗證為準。
+- Windows x64：`ZeroType-Windows-x64.zip` 與 `SHA256SUMS-Windows.txt`。
+- 上列本機驗證紀錄不代表所有正式下載附件均已驗證；請核對版本頁所列檔案與同版 SHA-256 清單。

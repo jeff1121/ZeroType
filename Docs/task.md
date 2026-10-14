@@ -1,6 +1,6 @@
 # 模型目錄更新與轉寫修補工作清單
 
-本文件追蹤模型目錄、轉寫修補、ID 唯一標籤、收合高度調整與文件校正，當前目標版本為 **`1.5.5+13`**。`1.5.4` 的 build 10／11／12 是本分支未發佈的測試歷程，保留原始驗證紀錄；更早工作見 [Tasks.md](Tasks.md)。所有修改沿用尚未合併的 [PR #3](https://github.com/jeff1121/ZeroType/pull/3)。2026-10-14 核對 GitHub Releases，最新已發布版本仍為 `v1.5.3`。
+本文件追蹤模型目錄、轉寫修補、ID 唯一標籤、收合高度調整、文件校正與 **`v1.5.5` 正式發布（原始碼版本 `1.5.5+13`）**。[PR #3](https://github.com/jeff1121/ZeroType/pull/3) 已於 2026-10-14 00:54:20（Asia/Taipei；UTC 2026-10-13 16:54:20）合併至 `master`，merge commit 為 `b4164bd`。`1.5.4` 的 build 10／11／12 是合併前未發布的測試歷程，保留原始驗證紀錄；更早工作見 [Tasks.md](Tasks.md)。正式產物以 [v1.5.5 下載頁](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 與下方發布驗收紀錄為準。
 
 ## 目前交付範圍（v1.5.5）
 
@@ -9,7 +9,7 @@
 - 官方／Proxy 目錄區分成功、空結果與失敗，具同來源快取、授權隔離與過期結果防護。
 - Gemini 各通道合併首候選可見文字並排除思考內容，避免首段空白導致整份轉寫被丟棄。
 - 說明文件逐項對照目前原始碼；產品能力、歷史計劃、提示詞指令與已完成的驗證分開記錄。
-- 升版、提交與 PR 不代表已發布安裝檔；本次不建立 tag、不自動合併或發布 GitHub Release。
+- 2026-10-15 依使用者要求進行正式發布，包含 `v1.5.5` tag、macOS／Windows 發布工作流程及下載產物驗收；PR 合併與正式發布分開記錄。
 
 ## 文件核對清單
 
@@ -34,7 +34,7 @@
 - [x] 納入已完成的下拉選單收合高度調整，保留文字大小與展開選項高度。
 - [x] 完成上述 12 份 Markdown 核對，README 與 Release Notes 同步。
 - [x] 本版格式、靜態分析、完整測試與 macOS Release 建置。
-- [x] 納入 `1.5.5+13` 提交與既有 PR #3 交付；遠端檢查依本版提交的 [PR checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 判定。
+- [x] `1.5.5+13` 提交 `007a3ed63906974cb6c85ad7fd4004433b7ec7ef` 已通過 Dart／Windows CI，並經 PR #3 合併至 `master`（`b4164bd`）。
 
 | v1.5.5 檢查 | 結果 |
 |---|---|
@@ -42,7 +42,27 @@
 | macOS Release 版本 | 成功建置，Info.plist 為 `1.5.5 (13)`，最低 macOS `12.0`，App 49.9 MB |
 | macOS 簽章封印與架構 | `EXPECTED_VERSION=1.5.5 bash scripts/verify_macos_release.sh` 通過；`x86_64 arm64`；本機為 ad-hoc 簽章，並非發布 workflow 的 ZeroType 自簽憑證，也不是 notarization |
 | 文件相對連結與版本一致性 | 12 份 Markdown、21 個相對連結皆可解析；pubspec／README／Release Notes／工作清單版本一致為 `1.5.5+13` |
-| PR Dart gates／Windows Release CI | 以本版提交對應的 [PR #3 checks](https://github.com/jeff1121/ZeroType/pull/3/checks) 為準 |
+| PR Dart gates／Windows Release CI | 提交 `007a3ed63906974cb6c85ad7fd4004433b7ec7ef` 的 [run 38433774347](https://github.com/jeff1121/ZeroType/actions/runs/38433774347) 已完成；`dart-checks` 與 `windows-build` 均成功。此為合併前檢查，不冒充下方正式發布工作流程的結果 |
+
+## v1.5.5 正式發布驗收（2026-10-15）
+
+發布基礎為已合併 PR #3 的 `master`；`release/v1.5.5` 用於本輪發布文件收尾。版本維持 `1.5.5+13`，tag 為 `v1.5.5`，正式下載頁固定為 [ZeroType v1.5.5](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5)。下列項目在取得實際結果前不勾選；完整本機測試及合併前 CI 已通過，仍不能替代發布工作流程與產物驗證。
+
+- [x] 核對 PR #3 的合併時間、merge commit 與對應提交的 CI 成功結果。
+- [ ] 發布文件收尾提交已納入發布來源，建立並推送指向正確提交的 `v1.5.5` tag。
+- [ ] tag 觸發的 `Build and Release Desktop Apps` 工作流程中，macOS 與 Windows 工作均成功。
+- [ ] 正式 Release 已建立，以下五個發布資產全部可下載。
+- [ ] 核對 macOS App／DMG 簽章封印與版本，及兩平台資產的 SHA-256 清單；結果與工作流程連結補記於本節。
+
+| 平台 | 預期發布資產 | 驗收狀態 |
+|---|---|---|
+| macOS | `ZeroType-macOS.dmg` | 以正式下載頁與發布工作流程結果為準 |
+| macOS | `ZeroType-macOS-arm64.zip` | 以正式下載頁與發布工作流程結果為準；實際架構以產物檢查為準 |
+| macOS | `SHA256SUMS.txt` | 應對應上述 DMG／ZIP；清單內路徑前綴為 `release/` |
+| Windows | `ZeroType-Windows-x64.zip` | 以正式下載頁與發布工作流程結果為準 |
+| Windows | `SHA256SUMS-Windows.txt` | 應對應 Windows ZIP |
+
+發布工作流程使用 `ZeroType` 自簽憑證簽署 macOS App；這不等於 Apple Developer ID 或 notarization。既有 Windows／Azure 真機與桌面流程人工驗證仍維持未驗證，不因建立 tag、發布或 CI 成功而補勾。
 
 以下 build 10／11／12 均為歷史驗證，未改寫成 v1.5.5 的驗證結果。
 
@@ -159,7 +179,7 @@
 
 中文即時驗證正確回傳「這是一段語音辨識測試，明天早上九點開會，請記得帶筆記本。」；英文簡短指令回傳對應的會議時間內容。這些呼叫經過正式 `SpeechRecognitionService.transcribe()` 與真實 Antigravity API，但沒有操作實體麥克風／剪貼簿，不稱為完整桌面流程實測。
 
-另觀察到內建長範例提示詞搭配全英文合成音檔時，曾出現翻譯或混入範例的輸出；這是仍待處理的模型／提示詞品質問題，不在本次多段回應解析修補中宣稱解決。本次沒有覆寫使用者自訂提示詞，也沒有修改內建提示詞或音訊 payload。
+追蹤決策：2026-10-15 依使用者決定，英文長提示詞／拼字品質觀察移出本輪追蹤；未修改提示詞或模型，未來頻繁重現再評估。
 
 ### 2026-10-14 模型標籤調整（build 12）
 
@@ -175,9 +195,10 @@
 
 ## 交付
 
-- 分支：`fix/model-catalog-reload`，已推送 `origin`。
+- 已合併的功能來源分支：`fix/model-catalog-reload`；本輪發布文件收尾分支：`release/v1.5.5`。
 - 功能提交：`02ac3df`（修正模型目錄更新、語音能力辨識與來源隔離）。
 - 轉寫修補：`cef64d3`（正確解析 Gemini 多段轉寫並排除思考內容）。
 - ID 標籤：`2421c47`（模型選單只顯示完整 ID，該提交的 Dart／Windows CI 已通過）。
-- Pull Request：[jeff1121/ZeroType #3](https://github.com/jeff1121/ZeroType/pull/3)。
-- 目前交付版本為 `1.5.5+13`，包含上述修正、40% 收合高度調整與 12 份文件同步。舊提交的驗證保留為歷史；CI 連結持續反映 PR 最新提交，不能把舊提交的綠燈當成本版結果。
+- `v1.5.5` 原始碼提交：`007a3ed63906974cb6c85ad7fd4004433b7ec7ef`，對應 [CI run 38433774347](https://github.com/jeff1121/ZeroType/actions/runs/38433774347) 的 Dart gates 與 Windows Release 編譯皆成功。
+- Pull Request：[jeff1121/ZeroType #3](https://github.com/jeff1121/ZeroType/pull/3)，已於 2026-10-14 00:54:20（Asia/Taipei）合併；merge commit：`b4164bd`。
+- 交付版本為 `1.5.5+13`，包含上述修正、40% 收合高度調整與 12 份文件同步。正式發布驗收見本文件上方；下載資產以 [v1.5.5 Release](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 為準，舊測試 build 的紀錄保留為歷史。

@@ -2,7 +2,7 @@
 
 日期：2026-09-29。目標版本：`1.5.3+9`。
 
-> 文件定位（2026-10-14 核對）：這是 v1.5.3 的歷史複查報告，以下 109 個測試、覆蓋率、簽章與人工回報不代表目前 `1.5.5+13` 已重新通過同一輪驗證。當前模型目錄、轉寫及 ID 選單修補與 [PR #3](https://github.com/jeff1121/ZeroType/pull/3) 狀態請依 [task.md](task.md)。本文件保留原證據，不把 Windows CI 編譯或 macOS widget 平台模擬當作 Windows 實機操作。
+> 文件定位（2026-10-15 核對）：這是 v1.5.3 的歷史複查報告，以下 109 個測試、覆蓋率、簽章與人工回報不代表目前 `1.5.5+13` 已重新通過同一輪驗證。模型目錄、轉寫及 ID 選單修補已經 [PR #3](https://github.com/jeff1121/ZeroType/pull/3) 合併；正式發布進度見 [task.md](task.md)。本文件保留原證據，不把 Windows CI 編譯或 macOS widget 平台模擬當作 Windows 實機操作。
 
 現行原始碼仍符合本報告的主要熱鍵契約：`WindowChromePolicy` 提供 Windows 原生標題列與 macOS 隱藏標題列；`main.dart` 啟用關閉攔截；`HotkeyService` 暫停期間暫存候選、恢復註冊成功後才提交。此為原始碼核對，不新增人工驗證結論。
 
