@@ -46,23 +46,25 @@
 
 ## v1.5.5 正式發布驗收（2026-10-15）
 
-發布基礎為已合併 PR #3 的 `master`；`release/v1.5.5` 用於本輪發布文件收尾。版本維持 `1.5.5+13`，tag 為 `v1.5.5`，正式下載頁固定為 [ZeroType v1.5.5](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5)。下列項目在取得實際結果前不勾選；完整本機測試及合併前 CI 已通過，仍不能替代發布工作流程與產物驗證。
+發布基礎為已合併 PR #3 的 `master`；發布文件經 [PR #4](https://github.com/jeff1121/ZeroType/pull/4) 合併，tag `v1.5.5` 指向 `dc7882e1cd28c7d4c6d1907ae994577729d1c032`，原始碼版本為 `1.5.5+13`。[ZeroType v1.5.5](https://github.com/jeff1121/ZeroType/releases/tag/v1.5.5) 已於 2026-10-15 00:58:48（Asia/Taipei）公開發布，非草稿、非預發佈版本。以下為下載正式附件後的驗收結果；本次補記不移動版本標籤或重建已發布的二進位檔。
 
 - [x] 核對 PR #3 的合併時間、merge commit 與對應提交的 CI 成功結果。
-- [ ] 發布文件收尾提交已納入發布來源，建立並推送指向正確提交的 `v1.5.5` tag。
-- [ ] tag 觸發的 `Build and Release Desktop Apps` 工作流程中，macOS 與 Windows 工作均成功。
-- [ ] 正式 Release 已建立，以下五個發布資產全部可下載。
-- [ ] 核對 macOS App／DMG 簽章封印與版本，及兩平台資產的 SHA-256 清單；結果與工作流程連結補記於本節。
+- [x] 發布文件收尾提交已納入發布來源，建立並推送指向正確提交的 `v1.5.5` tag。
+- [x] tag 觸發的 [Build and Release Desktop Apps／run 38601947340](https://github.com/jeff1121/ZeroType/actions/runs/38601947340) 中，macOS 與 Windows 工作均成功。
+- [x] 正式 Release 已建立，以下五個發布資產全部可下載。
+- [x] 已下載正式 DMG、macOS ZIP、Windows ZIP 及兩份 SHA-256 清單，核對版本、架構、簽章與 checksum。
 
 | 平台 | 預期發布資產 | 驗收狀態 |
 |---|---|---|
-| macOS | `ZeroType-macOS.dmg` | 以正式下載頁與發布工作流程結果為準 |
-| macOS | `ZeroType-macOS-arm64.zip` | 以正式下載頁與發布工作流程結果為準；實際架構以產物檢查為準 |
-| macOS | `SHA256SUMS.txt` | 應對應上述 DMG／ZIP；清單內路徑前綴為 `release/` |
-| Windows | `ZeroType-Windows-x64.zip` | 以正式下載頁與發布工作流程結果為準 |
-| Windows | `SHA256SUMS-Windows.txt` | 應對應 Windows ZIP |
+| macOS | `ZeroType-macOS.dmg` | 22,423,754 bytes；SHA-256 與簽章封印均通過；App `1.5.5 (13)`、`x86_64 arm64`、`Authority=ZeroType` |
+| macOS | `ZeroType-macOS-arm64.zip` | 20,356,091 bytes；SHA-256 與簽章封印均通過；App `1.5.5 (13)`、`x86_64 arm64`、`Authority=ZeroType` |
+| macOS | `SHA256SUMS.txt` | 192 bytes；對應上述 DMG／ZIP，清單內路徑前綴為 `release/` |
+| Windows | `ZeroType-Windows-x64.zip` | 13,555,922 bytes；SHA-256 通過；ZIP 中 `zero_type.exe` 的 PE 為 x64，file／product version 均為 `1.5.5.13` |
+| Windows | `SHA256SUMS-Windows.txt` | 92 bytes；對應 Windows ZIP，於 macOS 驗證時僅正規化清單的 CRLF 行尾，不修改 ZIP |
 
 發布工作流程使用 `ZeroType` 自簽憑證簽署 macOS App；這不等於 Apple Developer ID 或 notarization。既有 Windows／Azure 真機與桌面流程人工驗證仍維持未驗證，不因建立 tag、發布或 CI 成功而補勾。
+
+兩份 macOS 附件分別以 `EXPECTED_VERSION=1.5.5 bash scripts/verify_macos_release.sh <附件>` 驗證，並核對輸出的 build 13 與簽章身分；Windows ZIP 在記憶體讀取 PE 的 RT_VERSION 資源核對版本，未執行 EXE。Release 頁面另保留本次發布工作流程與資產驗收摘要。
 
 以下 build 10／11／12 均為歷史驗證，未改寫成 v1.5.5 的驗證結果。
 
